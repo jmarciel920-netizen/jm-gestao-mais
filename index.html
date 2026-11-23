@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0D1B3E">
+<title>JM Gestão+</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: amigável e simples, como o contador explicando no balcão.
+   IDEA: um caderninho de caixa no bolso, que o contador também enxerga.
+   PICTURE: o próprio app — saldo grande, dois botões enormes "Recebi" e "Paguei".
+   COLOUR and TYPE: marca JM — azul-marinho #0D1B3E, dourado #B8962E; Poppins + Montserrat.
+   LAYOUT: coluna única de celular; barra de abas embaixo; painel do escritório mais largo. */
+:root{color-scheme:light dark;
+--bg:light-dark(#f3f4f8,#070c1a);--card:light-dark(#fff,#111a33);--ink:light-dark(#0D1B3E,#e9edf7);--mut:light-dark(#5b6584,#9ca7c6);
+--line:light-dark(#e1e5ee,#23305a);--navy:#0D1B3E;--gold:#B8962E;--goldsoft:light-dark(#f7f0dd,#2a2410);
+--in:light-dark(#0f7a4d,#5fd3a0);--inbg:light-dark(#e2f4ea,#0f2a20);--out:light-dark(#b42318,#ff8a80);--outbg:light-dark(#fde8e6,#2e1110);
+--warn:light-dark(#9a5b00,#f0b45a);--warnbg:light-dark(#fdf1de,#2c1f0a)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Montserrat,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3,.big,.brand{font-family:Poppins,system-ui,sans-serif;line-height:1.15;margin:0;text-wrap:balance}
+h1{font-size:26px}h2{font-size:19px}h3{font-size:16px}
+button,input,select{font:inherit;font-size:16px;color:inherit}
+button{cursor:pointer;min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);padding:0 16px;font-weight:600}
+button:disabled{opacity:.5;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+input,select{min-height:50px;border:1px solid var(--line);border-radius:12px;background:var(--card);padding:0 14px;width:100%}
+label{display:grid;gap:6px;font-size:14px;color:var(--mut);font-weight:500}
+.pri{background:var(--gold);border-color:var(--gold);color:#fff}
+.dk{background:var(--navy);border-color:var(--navy);color:#fff}
+.lnk{border:0;background:none;color:var(--gold);min-height:40px;padding:0 4px;text-decoration:underline}
+.w{width:100%}
+.wrap{max-width:560px;margin:0 auto;padding:16px 16px 104px}
+.wide{max-width:1100px}
+.top{background:var(--navy);color:#fff;padding:18px 16px 22px}
+.top .in{max-width:560px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.wide-top .in{max-width:1100px}
+.brand{font-size:20px;font-weight:700}.brand b{color:var(--gold)}
+.top small{color:#b9c2dc;font-size:13px}
+.top button{min-height:40px;background:#ffffff18;border:0;color:#fff;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px}
+.saldo{background:var(--navy);color:#fff;border:0;margin-top:-10px}
+.saldo .l{color:#b9c2dc;font-size:14px}
+.saldo .big{font-size:clamp(32px,9vw,42px);font-weight:700;margin:4px 0 10px;white-space:nowrap}
+.saldo .row{display:flex;gap:18px;font-size:14px;flex-wrap:wrap}.saldo .row b{font-family:Poppins}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.act{min-height:86px;border-radius:18px;font-family:Poppins;font-size:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.act small{font:500 13px Montserrat;opacity:.85}
+.act.in{background:var(--in);border-color:var(--in);color:#fff}.act.out{background:var(--out);border-color:var(--out);color:#fff}
+.bar{height:12px;background:var(--line);border-radius:99px;overflow:hidden;margin:10px 0 6px}.bar i{display:block;height:100%;border-radius:99px;background:var(--gold)}
+.bar i.hi{background:var(--warn)}.bar i.over{background:var(--out)}
+.mut{color:var(--mut);font-size:14px}
+.tip{background:var(--goldsoft);border-radius:14px;padding:12px 14px;margin-top:14px;font-size:15px;display:flex;gap:10px;align-items:flex-start}
+.tip b{color:var(--gold)}.tip p{margin:0;flex:1}.tip button{min-height:36px;font-size:14px;padding:0 12px;flex:none}
+.pill{display:inline-block;font-size:13px;font-weight:600;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.p-in{background:var(--inbg);color:var(--in)}.p-out{background:var(--outbg);color:var(--out)}.p-w{background:var(--warnbg);color:var(--warn)}.p-g{background:var(--goldsoft);color:var(--gold)}
+.li{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
+.li:last-child{border-bottom:0}.li>div:first-child{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}.li>div:last-child{flex:none}
+.li .d{font-size:13px;color:var(--mut)}
+.v{font-family:Poppins;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+.v.in{color:var(--in)}.v.out{color:var(--out)}
+.x{min-height:36px;width:36px;padding:0;border-radius:10px;font-size:18px;color:var(--mut)}
+.day{font-size:13px;font-weight:600;color:var(--mut);margin-top:14px}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom));z-index:5}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--mut);text-decoration:none;font-size:12px;font-weight:600}
+nav.tabs a.on{color:var(--gold);background:var(--goldsoft)}
+nav.tabs svg{width:24px;height:24px}
+.sheet{position:fixed;inset:0;background:#0d1b3e99;display:none;align-items:flex-end;justify-content:center;z-index:9}
+.sheet.on{display:flex}
+.sheet .box{background:var(--bg);width:min(560px,100%);border-radius:22px 22px 0 0;padding:18px 16px max(18px,env(safe-area-inset-bottom));max-height:94vh;overflow:auto}
+.sheet .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.money{font-family:Poppins;font-size:34px;font-weight:700;text-align:center;min-height:68px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;border-radius:99px;font-weight:500;font-size:15px;padding:0 14px}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.grp{margin-top:16px}.grp>.t{font-size:14px;font-weight:600;color:var(--mut);margin-bottom:8px}
+.yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.yn button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.center{min-height:100vh;display:grid;place-items:center;padding:20px}
+.auth{width:min(420px,100%)}
+.auth .logo{font-family:Poppins;font-size:30px;font-weight:700;text-align:center}.auth .logo b{color:var(--gold)}
+.auth .slogan{text-align:center;color:var(--mut);margin:4px 0 20px}
+.stack{display:grid;gap:12px}
+.err{background:var(--outbg);color:var(--out);border-radius:12px;padding:10px 12px;font-size:14px}
+.ok{background:var(--inbg);color:var(--in);border-radius:12px;padding:10px 12px;font-size:14px}
+.steps{display:flex;gap:6px;justify-content:center;margin-bottom:14px}.steps i{width:28px;height:6px;border-radius:9px;background:var(--line)}.steps i.on{background:var(--gold)}
+.opt{display:grid;gap:10px}.opt button{min-height:64px;text-align:left;font-weight:500;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px}
+.opt button b{font-family:Poppins;font-size:17px}.opt button.on{border:2px solid var(--gold);background:var(--goldsoft)}
+.rel table{width:100%;border-collapse:collapse;font-size:15px}.rel td{padding:9px 4px;border-bottom:1px solid var(--line)}.rel td:last-child{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.rel tr.h td,.rel tr.h td:last-child{text-align:left}.rel tr.t td{font-weight:700;font-family:Poppins}.rel tr.h td{font-weight:600;color:var(--mut);font-size:13px;padding-top:16px}
+.mnav{display:flex;justify-content:space-between;align-items:center;gap:8px}.mnav button{min-height:44px;width:44px;padding:0;font-size:20px}
+.toast{position:fixed;bottom:92px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;display:none;z-index:20;max-width:92vw;text-align:center}
+.toast.on{display:block}
+.demo{position:fixed;top:0;left:50%;transform:translateX(-50%);background:var(--gold);color:#fff;font-size:12px;font-weight:600;padding:2px 12px;border-radius:0 0 10px 10px;z-index:30}
+table.adm{width:100%;border-collapse:collapse;font-size:15px}
+table.adm th{text-align:left;font-size:13px;color:var(--mut);padding:8px;border-bottom:1px solid var(--line)}
+table.adm td{padding:10px 8px;border-bottom:1px solid var(--line)}
+.n{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+.kp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.kp .card{margin:0}.kp .big{font-size:24px;font-weight:700;margin-top:4px}
+@media(max-width:700px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.cv{grid-template-columns:minmax(0,1fr)!important}
+.stk thead{display:none}.stk tr{display:grid;padding:8px 0;border-bottom:1px solid var(--line)}.stk td{border:0;padding:2px 0;text-align:left}}
+@media (prefers-reduced-motion:no-preference){.sheet.on .box{animation:up .22s ease-out}@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true"><div class="box" id="sbox"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+/* ===================== CONFIGURAÇÃO ===================== */
+/* 1) Cole aqui a configuração do seu projeto Firebase (passo 3 do LEIA-ME).
+      Enquanto estiver vazio (null), o app roda em MODO DEMONSTRAÇÃO, com dados de exemplo só neste navegador. */
+const FIREBASE_CONFIG = {apiKey:"AIzaSyDeoe_GeMZ0ObI33Q9z9uUcyizJVNrHsTY",authDomain:"jm-gestao-mais.firebaseapp.com",projectId:"jm-gestao-mais",storageBucket:"jm-gestao-mais.firebasestorage.app",messagingSenderId:"407461323661",appId:"1:407461323661:web:edc1dae0103c090d9cd3c4"};
+/* 2) E-mail(s) do escritório: quem entra com eles vê o Painel do escritório. */
+const ADMIN_EMAILS = ['contato@jmgestaocontabil.com.br'];
+/* 3) WhatsApp do escritório para o botão de ajuda (só números, com DDD). Deixe '' para esconder. */
+const WHATSAPP = '';
+/* 4) Limite anual de faturamento do MEI por ano. Atualize quando a lei mudar. */
+const LIMITE_MEI = {2026:81000};
+const LIMITE_PADRAO = 81000;
+/* ======================================================== */
+</script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const brl=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pad=n=>String(n).padStart(2,'0');
+const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())};
+const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+const fmtData=s=>{const [y,m,d]=s.split('-');return d+'/'+m};
+const parseValor=s=>{s=String(s).trim().replace(/[^\d,.-]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const v=parseFloat(s);return isFinite(v)?Math.round(v*100)/100:NaN};
+const DEMO=!FIREBASE_CONFIG;
+const isAdminEmail=e=>ADMIN_EMAILS.map(x=>x.toLowerCase()).includes(String(e||'').toLowerCase());
+
+/* Categorias. fat:true = entra no faturamento do MEI; ativ = linha do relatório mensal */
+const CAT_IN=[
+ {id:'venda',nome:'Venda de produto',fat:true,ativ:'comercio'},
+ {id:'servico',nome:'Serviço prestado',fat:true,ativ:'servico'},
+ {id:'producao',nome:'Produto que eu fabrico',fat:true,ativ:'industria'},
+ {id:'outro_in',nome:'Outro dinheiro que entrou',fat:false,dica:'Ex.: empréstimo, dinheiro pessoal colocado no negócio. Não conta no limite do MEI.'}];
+const CAT_OUT=[
+ {id:'mercadoria',nome:'Mercadoria ou material'},{id:'aluguel',nome:'Aluguel'},{id:'contas',nome:'Luz, água, internet'},
+ {id:'das',nome:'DAS (imposto do MEI)'},{id:'transporte',nome:'Combustível e transporte'},{id:'equip',nome:'Equipamento'},
+ {id:'retirada',nome:'Retirada para mim'},{id:'outro_out',nome:'Outra despesa'}];
+const FORMAS=['Pix','Dinheiro','Cartão','Boleto'];
+const catNome=id=>[...CAT_IN,...CAT_OUT].find(c=>c.id===id)?.nome||id;
+const isFat=l=>l.tipo==='in'&&!!CAT_IN.find(c=>c.id===l.cat)?.fat;
+
+/* ===================== DADOS ===================== */
+let fb=null,db=null,auth=null;
+const LS={get(k,d){try{const v=localStorage.getItem('jmg_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('jmg_'+k,JSON.stringify(v))}catch(e){}}};
+const mem={};
+const demoStore={
+ get(k,d){return k in mem?mem[k]:(mem[k]=LS.get(k,d))},
+ set(k,v){mem[k]=v;LS.set(k,v)}};
+function seedDemo(){
+ if(demoStore.get('seeded',false))return;
+ const y=new Date().getFullYear(),m=new Date().getMonth()+1;
+ const emp={uid:'demo-mei',nome:'Studio Bella Estética',email:'bella@exemplo.com',tipo:'servico',abertura:'2024-03',dasLembrete:true,cnpj:'',dicas:{},criadoEm:hoje()};
+ const L=[];let id=1;const add=(mm,d,tipo,cat,valor,forma,nota,desc)=>{if(mm<1)return;L.push({id:'d'+(id++),tipo,cat,valor,forma,nota,desc,data:y+'-'+pad(mm)+'-'+pad(d)})};
+ for(let mm=1;mm<=m;mm++){
+  const k=mm===m?Math.min(new Date().getDate(),28):28;
+  for(let d=2;d<=k;d+=3)add(mm,d,'in','servico',[130,180,220,150,110][d%5],FORMAS[d%3],d%4===0,['Design de sobrancelha','Limpeza de pele','Manicure e pedicure','Depilação','Massagem'][d%5]);
+  if(k>=8)add(mm,8,'in','venda',[45,90,60][mm%3],'Pix',false,'Venda de cosméticos');
+  if(k>=5)add(mm,5,'out','aluguel',650,'Pix',false,'Aluguel da sala');
+  if(k>=10)add(mm,10,'out','contas',[180,210,165][mm%3],'Boleto',false,'Energia');
+  if(k>=15)add(mm,15,'out','mercadoria',[320,280,410][mm%3],'Cartão',false,'Produtos e descartáveis');
+  if(mm<m&&k>=18)add(mm+1>m?m:mm+1,18,'out','das',81.05,'Pix',false,'DAS de '+MESES[mm-1]);
+ }
+ demoStore.set('emp_demo-mei',emp);demoStore.set('lanc_demo-mei',L);
+ demoStore.set('emp_demo-2',{uid:'demo-2',nome:'Auto Elétrica Silva',email:'silva@exemplo.com',tipo:'ambos',abertura:'2022-06',dicas:{},criadoEm:hoje()});
+ demoStore.set('lanc_demo-2',Array.from({length:m*4},(_,i)=>({id:'s'+i,tipo:'in',cat:i%2?'servico':'venda',valor:1500+((i*137)%900),forma:'Pix',nota:true,desc:'',data:y+'-'+pad(Math.floor(i/4)+1)+'-'+pad(3+(i%4)*6)})));
+ demoStore.set('convites',[{email:'bella@exemplo.com',nome:'Studio Bella Estética',em:hoje()},{email:'silva@exemplo.com',nome:'Auto Elétrica Silva',em:hoje()},{email:'novocliente@exemplo.com',nome:'Doce Sabor',em:hoje()}]);
+ demoStore.set('seeded',true);
+}
+const API={
+ async init(){
+  if(DEMO){seedDemo();return}
+  const v='10.12.5',base='https://www.gstatic.com/firebasejs/'+v+'/';
+  for(const f of ['firebase-app-compat.js','firebase-auth-compat.js','firebase-firestore-compat.js'])await new Promise((ok,no)=>{const s=document.createElement('script');s.src=base+f;s.onload=ok;s.onerror=()=>no(new Error('Sem conexão com o servidor'));document.head.appendChild(s)});
+  fb=window.firebase;fb.initializeApp(FIREBASE_CONFIG);auth=fb.auth();auth.languageCode='pt';db=fb.firestore();
+  try{await db.enablePersistence({synchronizeTabs:true})}catch(e){}
+ },
+ onUser(cb){
+  if(DEMO){const u=demoStore.get('sess',null);setTimeout(()=>cb(u),0);return}
+  auth.onAuthStateChanged(u=>{if(S.busy)return;cb(u?{uid:u.uid,email:(u.email||'').toLowerCase()}:null)});
+ },
+ async login(email,senha){
+  email=email.trim().toLowerCase();
+  if(DEMO){
+   if(isAdminEmail(email)){const u={uid:'admin',email};demoStore.set('sess',u);return u}
+   const c=demoStore.get('convites',[]).find(c=>c.email===email);if(!c)throw new Error('Este e-mail não tem acesso. Peça o convite ao escritório.');
+   const uid=email==='bella@exemplo.com'?'demo-mei':email==='silva@exemplo.com'?'demo-2':'u_'+email.replace(/\W/g,'');
+   const u={uid,email};demoStore.set('sess',u);return u}
+  const r=await auth.signInWithEmailAndPassword(email,senha);return {uid:r.user.uid,email}
+ },
+ async signup(email,senha){
+  email=email.trim().toLowerCase();
+  if(DEMO)return API.login(email,senha);
+  const r=await auth.createUserWithEmailAndPassword(email,senha);
+  if(!isAdminEmail(email)){
+   let ok=false;try{ok=(await db.collection('convites').doc(email).get()).exists}catch(e){ok=false}
+   if(!ok){try{await r.user.delete()}catch(e){await auth.signOut()}throw new Error('Este e-mail ainda não foi convidado. Fale com o escritório para liberar seu acesso.')}
+  }
+  try{await r.user.sendEmailVerification()}catch(e){}
+  return {uid:r.user.uid,email}
+ },
+ async reset(email){if(DEMO)return;await auth.sendPasswordResetEmail(email.trim().toLowerCase())},
+ async logout(){if(DEMO){demoStore.set('sess',null);return}await auth.signOut()},
+ async getEmp(uid){if(DEMO)return demoStore.get('emp_'+uid,null);const d=await db.collection('empresas').doc(uid).get();return d.exists?{uid,...d.data()}:null},
+ async saveEmp(uid,data){if(DEMO){demoStore.set('emp_'+uid,{...(demoStore.get('emp_'+uid,{})),...data,uid});return}await db.collection('empresas').doc(uid).set(data,{merge:true})},
+ async listLanc(uid,ano){
+  if(DEMO)return demoStore.get('lanc_'+uid,[]).filter(l=>l.data.startsWith(ano+'-'));
+  const q=await db.collection('empresas').doc(uid).collection('lanc').where('data','>=',ano+'-01-01').where('data','<=',ano+'-12-31').get();
+  return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async addLanc(uid,l){
+  if(DEMO){const L=demoStore.get('lanc_'+uid,[]);const n={...l,id:'n'+Date.now()};L.push(n);demoStore.set('lanc_'+uid,L);return n}
+  const r=await db.collection('empresas').doc(uid).collection('lanc').add({...l,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...l,id:r.id}},
+ async delLanc(uid,id){if(DEMO){demoStore.set('lanc_'+uid,demoStore.get('lanc_'+uid,[]).filter(l=>l.id!==id));return}await db.collection('empresas').doc(uid).collection('lanc').doc(id).delete()},
+ async listEmps(){
+  if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
+   return ks.filter((k,i,a)=>k.startsWith('emp_')&&a.indexOf(k)===i).map(k=>demoStore.get(k,null)).filter(Boolean)}
+  const q=await db.collection('empresas').get();return q.docs.map(d=>({uid:d.id,...d.data()}))},
+ async listConv(){if(DEMO)return demoStore.get('convites',[]);const q=await db.collection('convites').get();return q.docs.map(d=>({email:d.id,...d.data()}))},
+ async addConv(email,nome){email=email.trim().toLowerCase();if(DEMO){const C=demoStore.get('convites',[]).filter(c=>c.email!==email);C.push({email,nome,em:hoje()});demoStore.set('convites',C);return}
+  await db.collection('convites').doc(email).set({nome,em:hoje()})},
+ async delConv(email){if(DEMO){demoStore.set('convites',demoStore.get('convites',[]).filter(c=>c.email!==email));return}await db.collection('convites').doc(email).delete()}
+};
+
+/* ===================== ESTADO ===================== */
+const S={user:null,emp:null,lanc:[],ano:new Date().getFullYear(),mes:new Date().getMonth()+1,tab:'inicio',ob:{step:1},sh:null,admin:{emps:[],conv:[],sel:null,lanc:[]}};
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2800)}
+function errMsg(e){const c=e&&e.code||'';return ({
+ 'auth/invalid-email':'E-mail inválido.','auth/user-not-found':'E-mail ou senha incorretos.','auth/wrong-password':'E-mail ou senha incorretos.','auth/invalid-credential':'E-mail ou senha incorretos.',
+ 'auth/email-already-in-use':'Este e-mail já tem acesso. Use "Entrar".','auth/weak-password':'A senha precisa ter pelo menos 6 caracteres.','auth/too-many-requests':'Muitas tentativas. Espere alguns minutos.',
+ 'auth/network-request-failed':'Sem internet. Confira a conexão.'})[c]||e.message||'Algo deu errado. Tente de novo.'}
+
+/* ===================== CÁLCULOS ===================== */
+const doMes=(L,a,m)=>L.filter(l=>l.data.startsWith(a+'-'+pad(m)));
+const soma=(L,t)=>L.filter(l=>l.tipo===t).reduce((s,l)=>s+(+l.valor||0),0);
+function limiteAno(emp,ano){
+ const lim=LIMITE_MEI[ano]||LIMITE_PADRAO;
+ const [ay,am]=(emp.abertura||'2000-01').split('-').map(Number);
+ if(ay===ano){const meses=12-am+1;return {valor:lim/12*meses,prop:true,meses}}
+ return {valor:lim,prop:false,meses:12}}
+function dasInfo(L){
+ const d=new Date(),dia=d.getDate();let cm=d.getMonth(),cy=d.getFullYear();if(cm===0){cm=12;cy--}
+ const comp=MESES[cm-1];
+ const pago=L.some(l=>l.tipo==='out'&&l.cat==='das'&&(l.data.slice(0,7)===d.getFullYear()+'-'+pad(d.getMonth()+1)));
+ const venc='20/'+pad(d.getMonth()+1);
+ if(pago)return {st:'ok',txt:'DAS de '+comp+' pago. Tudo certo!'};
+ if(dia<=20)return {st:dia>=15?'w':'n',txt:'O DAS de '+comp+' vence dia '+venc+(dia===20?' (hoje!)':', daqui a '+(20-dia)+' dia'+(20-dia>1?'s':''))+'.',comp};
+ return {st:'late',txt:'O DAS de '+comp+' venceu dia '+venc+'. Se ainda não pagou, fale com o escritório para gerar a guia atualizada.',comp}}
+
+/* ===================== DICAS ===================== */
+const DICAS={
+ inicio:'Toda vez que entrar ou sair dinheiro do negócio, toque em <b>Recebi</b> ou <b>Paguei</b>. Leva 10 segundos e o escritório já fica sabendo.',
+ extrato:'Aqui fica tudo o que você lançou, mês a mês. Errou algum? Toque no <b>×</b> para apagar e lance de novo.',
+ relatorio:'Este é o <b>relatório mensal de receitas</b> que todo MEI precisa guardar. O app monta sozinho com o que você lançou.',
+ ajuda:'Ficou com dúvida? Os atalhos abaixo explicam cada parte do app.'};
+function dica(k){
+ if(!S.emp||S.emp.dicas?.[k])return '';
+ return `<div class="tip"><p>${DICAS[k]}</p><button data-dica="${k}">Entendi</button></div>`}
+
+/* ===================== TELAS: ACESSO ===================== */
+function telaLogin(modo='entrar',msg=''){
+ const t={entrar:['Entrar','Entrar'],criar:['Criar meu acesso','Criar acesso'],esqueci:['Recuperar senha','Enviar link']}[modo];
+ $('#app').innerHTML=`<div class="center"><div class="auth">
+  <div class="logo">JM Gestão<b>+</b></div><div class="slogan">Seu negócio em dia, conectado ao seu contador</div>
+  <div class="card"><h2 style="margin-bottom:12px">${t[0]}</h2>
+  ${modo==='criar'?'<p class="mut" style="margin:0 0 12px">Use o mesmo e-mail que você passou para o escritório.</p>':''}
+  <form class="stack" id="fa">
+   <label>Seu e-mail<input type="email" name="email" autocomplete="email" required value="${esc(S._em||'')}"></label>
+   ${modo!=='esqueci'?`<label>Senha${modo==='criar'?' (mínimo 6 caracteres)':''}<input type="password" name="senha" autocomplete="${modo==='criar'?'new-password':'current-password'}" minlength="6" required></label>`:''}
+   ${msg}
+   <button class="pri w" type="submit">${t[1]}</button>
+  </form>
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:10px">
+   ${modo!=='entrar'?'<button class="lnk" data-modo="entrar">Já tenho acesso</button>':'<button class="lnk" data-modo="criar">Primeiro acesso</button>'}
+   ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}
+  </div></div>
+  ${DEMO?`<div class="card mut" style="font-size:14px"><b style="color:var(--ink)">Modo demonstração.</b> Entre com <b>bella@exemplo.com</b> (cliente MEI com dados), <b>novocliente@exemplo.com</b> (primeiro acesso) ou <b>${esc(ADMIN_EMAILS[0])}</b> (escritório). Qualquer senha com 6 letras.</div>`:''}
+ </div></div>`;
+ $('#fa').onsubmit=async e=>{e.preventDefault();const f=new FormData(e.target);const email=f.get('email');S._em=email;const b=e.target.querySelector('button[type=submit]');b.disabled=true;
+  try{
+   if(modo==='esqueci'){await API.reset(email);telaLogin('entrar','<div class="ok">Enviamos um link para o seu e-mail. Abra e crie uma senha nova.</div>');return}
+   S.busy=true;
+   const u=modo==='criar'?await API.signup(email,f.get('senha')):await API.login(email,f.get('senha'));
+   S.busy=false;iniciar(u);
+  }catch(err){S.busy=false;b.disabled=false;telaLogin(modo,`<div class="err">${esc(errMsg(err))}</div>`)}};
+}
+
+/* ===================== PRIMEIRO ACESSO ===================== */
+function telaOnboarding(){
+ const o=S.ob,st=o.step;let body='';
+ if(st===1)body=`<h2>Como se chama o seu negócio?</h2><p class="mut">É o nome que seus clientes conhecem.</p>
+  <label>Nome do negócio<input id="obn" value="${esc(o.nome||'')}" placeholder="Ex.: Doce Sabor"></label>`;
+ if(st===2)body=`<h2>O que você faz?</h2><p class="mut">Isso organiza o seu relatório do MEI.</p><div class="opt">
+  ${[['servico','Presto serviço','cabeleireira, eletricista, manicure…'],['comercio','Vendo produtos','loja, revenda, lanches prontos…'],['ambos','Os dois','vendo e também presto serviço']].map(x=>`<button data-tipo="${x[0]}" class="${o.tipo===x[0]?'on':''}"><b>${x[1]}</b><span class="mut">${x[2]}</span></button>`).join('')}</div>`;
+ if(st===3)body=`<h2>Quando você abriu o MEI?</h2><p class="mut">Serve para calcular certinho o seu limite de faturamento no ano.</p>
+  <label>Mês e ano de abertura<input id="oba" type="month" value="${esc(o.abertura||'')}" max="${hoje().slice(0,7)}"></label>`;
+ if(st===4)body=`<h2>Quer um lembrete do DAS?</h2><p class="mut">O DAS é o imposto mensal do MEI e vence todo dia 20. A gente te avisa na tela inicial.</p>
+  <div class="yn"><button data-das="1" class="${o.das!==false?'on':''}">Sim, quero</button><button data-das="0" class="${o.das===false?'on':''}">Não precisa</button></div>`;
+ $('#app').innerHTML=`<div class="center"><div class="auth"><div class="logo" style="font-size:22px">JM Gestão<b>+</b></div>
+  <div class="card"><div class="steps">${[1,2,3,4].map(i=>`<i class="${i<=st?'on':''}"></i>`).join('')}</div>
+  <div class="stack">${body}<div id="oberr"></div>
+  <div style="display:grid;grid-template-columns:${st>1?'1fr 2fr':'1fr'};gap:10px">${st>1?'<button id="obv">Voltar</button>':''}<button class="pri" id="obg">${st<4?'Continuar':'Começar a usar'}</button></div></div></div>
+  <p class="mut" style="text-align:center">Passo ${st} de 4</p></div></div>`;
+ const f=$('#obn')||$('#oba');if(f)f.focus();
+}
+async function obNext(){
+ const o=S.ob,e=m=>{$('#oberr').innerHTML=`<div class="err">${m}</div>`};
+ if(o.step===1){o.nome=$('#obn').value.trim();if(!o.nome)return e('Escreva o nome do negócio.')}
+ if(o.step===2&&!o.tipo)return e('Escolha uma opção.');
+ if(o.step===3){o.abertura=$('#oba').value;if(!o.abertura)return e('Informe o mês e o ano. Se não lembrar, use um valor aproximado.')}
+ if(o.step<4){o.step++;return telaOnboarding()}
+ const emp={nome:o.nome,tipo:o.tipo,abertura:o.abertura,dasLembrete:o.das!==false,email:S.user.email,dicas:{},criadoEm:hoje()};
+ try{await API.saveEmp(S.user.uid,emp);S.emp={uid:S.user.uid,...emp};S.lanc=[];go('inicio');toast('Pronto! Seu app está configurado.')}
+ catch(err){e(esc(errMsg(err)))}
+}
+
+/* ===================== APP DO CLIENTE ===================== */
+const IC={
+ inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+ extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+ relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
+function shell(inner){
+ return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><button id="sair">Sair</button></div></header>
+ <main class="wrap">${inner}</main>
+ <nav class="tabs" aria-label="Menu">${[['inicio','Início'],['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']].map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
+
+function vInicio(){
+ const a=S.ano,m=S.mes,LM=doMes(S.lanc,new Date().getFullYear(),new Date().getMonth()+1);
+ const ent=soma(LM,'in'),sai=soma(LM,'out');
+ const fatAno=S.lanc.filter(isFat).reduce((s,l)=>s+l.valor,0);
+ const lim=limiteAno(S.emp,new Date().getFullYear());const pc=Math.min(100,fatAno/lim.valor*100);
+ const das=dasInfo(S.lanc);if(das.st==='late'&&(S.emp.criadoEm||'').slice(0,7)===hoje().slice(0,7)){das.st='n';das.txt='Quando pagar o DAS, toque em "Já paguei" para registrar.'}
+ const ult=[...S.lanc].sort((x,y)=>y.data.localeCompare(x.data)||String(y.id).localeCompare(String(x.id))).slice(0,5);
+ let msgLim=pc<70?'Você está tranquilo dentro do limite.':pc<90?'Atenção: você já usou boa parte do limite do ano. Converse com o escritório.':pc<100?'Muito perto do limite! Fale com o escritório antes de faturar mais.':'Você passou do limite do MEI. Fale com o escritório o quanto antes.';
+ return shell(`
+ <div class="card saldo"><div class="l">Saldo de ${MESES[new Date().getMonth()]}</div><div class="big">${brl(ent-sai)}</div>
+  <div class="row"><span>Entrou <b>${brl(ent)}</b></span><span>Saiu <b>${brl(sai)}</b></span></div></div>
+ <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
+ ${dica('inicio')}
+ ${S.emp.dasLembrete?`<div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
+  <div style="flex:1 1 220px"><h3>Imposto do mês (DAS)</h3><p class="mut" style="margin:4px 0 0">${das.txt}</p></div>
+  ${das.st==='ok'?'<span class="pill p-in">Pago</span>':`<button data-das="1">Já paguei</button>`}</div>`:''}
+ <div class="card"><h3>Limite do MEI em ${new Date().getFullYear()}</h3>
+  <div class="bar"><i class="${pc>=100?'over':pc>=80?'hi':''}" style="width:${pc}%"></i></div>
+  <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="v">${brl(fatAno)}</span><span class="mut">de ${brl(lim.valor)}${lim.prop?' (proporcional a '+lim.meses+' meses)':''}</span></div>
+  <p class="mut" style="margin:8px 0 0">${msgLim}</p></div>
+ <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Últimos lançamentos</h3><a href="#extrato" class="lnk" style="font-size:14px">Ver tudo</a></div>
+  ${ult.length?ult.map(itemLanc).join(''):'<p class="mut">Nada lançado ainda. Toque em <b>Recebi</b> quando entrar o primeiro dinheiro.</p>'}</div>`)}
+
+function itemLanc(l,del){
+ return `<div class="li"><div><div>${esc(l.desc||catNome(l.cat))}</div><div class="d">${fmtData(l.data)} · ${esc(catNome(l.cat))} · ${esc(l.forma||'')}${l.tipo==='in'&&isFat(l)?(l.nota?' · com nota':' · sem nota'):''}</div></div>
+  <div style="display:flex;align-items:center;gap:6px"><span class="v ${l.tipo}">${l.tipo==='in'?'+':'−'} ${brl(l.valor)}</span>${del?`<button class="x" data-del="${esc(l.id)}" aria-label="Apagar">×</button>`:''}</div></div>`}
+
+function vExtrato(){
+ const L=doMes(S.lanc,S.ano,S.mes).sort((x,y)=>y.data.localeCompare(x.data));
+ const dias={};L.forEach(l=>(dias[l.data]=dias[l.data]||[]).push(l));
+ return shell(`<h1>Extrato</h1>${dica('extrato')}
+ <div class="card"><div class="mnav"><button data-mes="-1" aria-label="Mês anterior">‹</button><h2 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h2><button data-mes="1" aria-label="Próximo mês">›</button></div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px"><span class="pill p-in">Entrou ${brl(soma(L,'in'))}</span><span class="pill p-out">Saiu ${brl(soma(L,'out'))}</span><span class="pill p-g">Saldo ${brl(soma(L,'in')-soma(L,'out'))}</span></div></div>
+ <div class="card">${Object.keys(dias).length?Object.entries(dias).map(([d,ls])=>`<div class="day">${fmtData(d)}</div>${ls.map(l=>itemLanc(l,true)).join('')}`).join(''):'<p class="mut">Nenhum lançamento neste mês.</p>'}</div>`)}
+
+function relatorioDados(L){
+ const r={comercio:[0,0],industria:[0,0],servico:[0,0]};
+ L.filter(isFat).forEach(l=>{const at=CAT_IN.find(c=>c.id===l.cat).ativ;r[at][l.nota?1:0]+=l.valor});return r}
+function vRelatorio(){
+ const L=doMes(S.lanc,S.ano,S.mes),r=relatorioDados(L),tot=k=>r[k][0]+r[k][1],T=tot('comercio')+tot('industria')+tot('servico');
+ const sec=(t,k)=>`<tr class="h"><td colspan="2">${t}</td></tr><tr><td>Sem nota fiscal</td><td>${brl(r[k][0])}</td></tr><tr><td>Com nota fiscal</td><td>${brl(r[k][1])}</td></tr><tr class="t"><td>Total</td><td>${brl(tot(k))}</td></tr>`;
+ return shell(`<h1>Relatório do mês</h1>${dica('relatorio')}
+ <div class="card"><div class="mnav"><button data-mes="-1" aria-label="Mês anterior">‹</button><h2 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h2><button data-mes="1" aria-label="Próximo mês">›</button></div></div>
+ <div class="card rel" id="relbox"><h3>Relatório Mensal das Receitas Brutas</h3><p class="mut" style="margin:4px 0 0">${esc(S.emp.nome)} · ${MESES[S.mes-1]} de ${S.ano}</p>
+  <table>${sec('Revenda de mercadorias (comércio)','comercio')}${sec('Venda de produtos fabricados (indústria)','industria')}${sec('Prestação de serviços','servico')}
+  <tr class="h"><td colspan="2"></td></tr><tr class="t"><td>Total geral do mês</td><td>${brl(T)}</td></tr></table>
+  <p class="mut" style="margin-top:12px">Guarde este relatório junto com as notas de compra e de venda do mês. O escritório também recebe uma cópia automaticamente.</p></div>
+ <div class="acts"><button id="relcopy">Copiar</button><button class="dk" id="relprint">Imprimir</button></div>`)}
+
+function vAjuda(){
+ const itens=[['Como lançar um recebimento','Toque em <b>Recebi</b>, digite o valor, escolha o que foi (venda ou serviço) e como recebeu. Se emitiu nota, marque "Sim".'],
+  ['Como lançar uma despesa','Toque em <b>Paguei</b>, digite o valor e escolha o tipo. A retirada para você também entra aqui, assim o saldo fica certo.'],
+  ['O que é o limite do MEI','É o máximo que o MEI pode faturar no ano. Só conta o que você vendeu ou o serviço que prestou. Empréstimos não contam.'],
+  ['O que é o DAS','É o imposto mensal do MEI, com vencimento todo dia 20. Quando pagar, toque em "Já paguei" na tela inicial.'],
+  ['Para que serve o relatório','A lei pede que o MEI guarde todo mês um resumo do que faturou. O app monta sozinho.'],
+  ['Instalar na tela do celular','No Android: menu ⋮ do Chrome → "Adicionar à tela inicial". No iPhone: botão Compartilhar do Safari → "Adicionar à Tela de Início".']];
+ return shell(`<h1>Ajuda</h1>${dica('ajuda')}
+ ${itens.map(i=>`<details class="card"><summary style="cursor:pointer;font-weight:600;min-height:28px">${i[0]}</summary><p style="margin:10px 0 0">${i[1]}</p></details>`).join('')}
+ ${WHATSAPP?`<a class="card" style="display:block;text-decoration:none;color:inherit" href="https://wa.me/55${esc(WHATSAPP)}"><h3>Falar com o escritório no WhatsApp</h3><p class="mut" style="margin:4px 0 0">(${esc(WHATSAPP.slice(0,2))}) ${esc(WHATSAPP.slice(2))}</p></a>`:''}
+ <div class="card"><h3>Meus dados</h3><p class="mut" style="margin:6px 0 0">${esc(S.emp.nome)} · ${({servico:'Presta serviço',comercio:'Vende produtos',ambos:'Vende e presta serviço'})[S.emp.tipo]} · MEI desde ${esc((S.emp.abertura||'').split('-').reverse().join('/'))}</p>
+  <label style="margin-top:12px;flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" id="daschk" style="width:24px;min-height:24px" ${S.emp.dasLembrete?'checked':''}> Mostrar lembrete do DAS</label>
+  <button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
+ <p class="mut" style="text-align:center">JM Gestão+ · versão piloto · JM Gestão Contábil e Perícias</p>`)}
+
+/* ===================== LANÇAMENTO ===================== */
+function abrirNovo(tipo,preset={}){
+ S.sh={tipo,valor:preset.valor||'',cat:preset.cat||(tipo==='in'?(S.emp.tipo==='comercio'?'venda':S.emp.tipo==='servico'?'servico':''):''),forma:preset.forma||'Pix',nota:false,data:hoje(),desc:preset.desc||''};
+ renderSheet();$('#sheet').classList.add('on');setTimeout(()=>$('#val')?.focus(),60)}
+function renderSheet(){
+ const s=S.sh,cats=s.tipo==='in'?CAT_IN.filter(c=>c.id!=='producao'||S.emp.tipo!=='servico'):CAT_OUT,catSel=cats.find(c=>c.id===s.cat);
+ $('#sbox').innerHTML=`<div class="hd"><h2>${s.tipo==='in'?'Recebi':'Paguei'}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+ <label>Quanto?<input class="money" id="val" inputmode="decimal" placeholder="R$ 0,00" value="${esc(s.valor)}" autocomplete="off"></label>
+ <div class="grp"><div class="t">${s.tipo==='in'?'O que foi?':'Com o quê?'}</div><div class="chips">${cats.map(c=>`<button class="chip ${s.cat===c.id?'on':''}" data-cat="${c.id}">${c.nome}</button>`).join('')}</div>
+  ${catSel?.dica?`<p class="mut" style="margin:8px 0 0">${catSel.dica}</p>`:''}</div>
+ <div class="grp"><div class="t">${s.tipo==='in'?'Como recebeu?':'Como pagou?'}</div><div class="chips">${FORMAS.map(f=>`<button class="chip ${s.forma===f?'on':''}" data-forma="${f}">${f}</button>`).join('')}</div></div>
+ ${s.tipo==='in'&&catSel?.fat?`<div class="grp"><div class="t">Emitiu nota fiscal?</div><div class="yn"><button data-nota="1" class="${s.nota?'on':''}">Sim</button><button data-nota="0" class="${!s.nota?'on':''}">Não</button></div></div>`:''}
+ <div class="grp" style="display:grid;grid-template-columns:1fr 1.4fr;gap:10px"><label>Data<input type="date" id="dt" value="${s.data}" max="${hoje()}"></label><label>Descrição (opcional)<input id="ds" value="${esc(s.desc)}" placeholder="Ex.: cliente Maria"></label></div>
+ <div id="sherr" style="margin-top:12px"></div>
+ <button class="${s.tipo==='in'?'pri':'dk'} w" id="salvar" style="margin-top:8px;min-height:56px;font-size:18px">Salvar</button>`}
+function guardaCampos(){const s=S.sh;if(!s)return;s.valor=$('#val')?.value??s.valor;s.data=$('#dt')?.value||s.data;s.desc=$('#ds')?.value??s.desc}
+async function salvarLanc(){
+ guardaCampos();const s=S.sh,v=parseValor(s.valor),e=m=>{$('#sherr').innerHTML=`<div class="err">${m}</div>`};
+ if(!(v>0))return e('Digite o valor. Ex.: 150 ou 89,90');
+ if(!s.cat)return e(s.tipo==='in'?'Escolha o que foi (venda, serviço…).':'Escolha com o que gastou.');
+ if(!s.data||s.data>hoje())return e('Confira a data.');
+ const l={tipo:s.tipo,valor:v,cat:s.cat,forma:s.forma,nota:s.tipo==='in'&&isFat({tipo:'in',cat:s.cat})?!!s.nota:false,data:s.data,desc:s.desc.trim().slice(0,80)};
+ const b=$('#salvar');b.disabled=true;
+ try{const n=await API.addLanc(S.user.uid,l);if(l.data.startsWith(S.ano+'-'))S.lanc.push(n);fecharSheet();render();toast((s.tipo==='in'?'Recebimento':'Pagamento')+' de '+brl(v)+' salvo!')}
+ catch(err){b.disabled=false;e(esc(errMsg(err)))}}
+function fecharSheet(){$('#sheet').classList.remove('on');S.sh=null}
+function confirmar(txt,acao,rotulo='Apagar'){
+ S.sh=null;$('#sbox').innerHTML=`<h2>${txt}</h2><p class="mut">Não dá para desfazer.</p><div class="acts"><button id="shx">Cancelar</button><button class="dk" id="cfok" style="background:var(--out);border-color:var(--out)">${rotulo}</button></div>`;
+ $('#sheet').classList.add('on');$('#cfok').onclick=async()=>{fecharSheet();await acao()}}
+
+/* ===================== PAINEL DO ESCRITÓRIO ===================== */
+async function carregarAdmin(){
+ const [emps,conv]=await Promise.all([API.listEmps(),API.listConv()]);
+ const ano=new Date().getFullYear(),mesAt=hoje().slice(0,7);
+ for(const e of emps){const L=await API.listLanc(e.uid,ano);e._fat=L.filter(isFat).reduce((s,l)=>s+l.valor,0);e._mes=L.filter(l=>l.data.startsWith(mesAt)&&isFat(l)).reduce((s,l)=>s+l.valor,0);
+  e._ult=L.reduce((m,l)=>l.data>m?l.data:m,'');e._lim=limiteAno(e,ano).valor;e._pc=e._fat/e._lim*100;e._das=dasInfo(L).st}
+ S.admin.emps=emps;S.admin.conv=conv}
+function vAdmin(){
+ const A=S.admin,ano=new Date().getFullYear(),E=A.emps;
+ const ativos=E.filter(e=>e._ult&&(Date.now()-new Date(e._ult))/864e5<=7).length;
+ const pend=A.conv.filter(c=>!E.some(e=>(e.email||'').toLowerCase()===c.email));
+ return `<header class="top wide-top"><div class="in"><div><div class="brand">JM Gestão<b>+</b> · Escritório</div><small>Piloto ${ano}</small></div><button id="sair">Sair</button></div></header>
+ <main class="wrap wide">
+ <div class="kp" style="margin-top:14px">
+  <div class="card"><div class="mut">Clientes usando</div><div class="big">${E.length}</div></div>
+  <div class="card"><div class="mut">Lançaram nos últimos 7 dias</div><div class="big">${ativos}</div></div>
+  <div class="card"><div class="mut">Convites sem acesso ainda</div><div class="big">${pend.length}</div></div>
+  <div class="card"><div class="mut">Perto do limite (80%+)</div><div class="big">${E.filter(e=>e._pc>=80).length}</div></div></div>
+ <div class="card scroll"><h2 style="margin-bottom:8px">Clientes no piloto</h2>
+  ${E.length?`<table class="adm stk"><thead><tr><th>Cliente</th><th class="n">Faturamento no mês</th><th class="n">No ano</th><th>Limite MEI</th><th>DAS</th><th>Último lançamento</th><th></th></tr></thead><tbody>
+  ${E.sort((a,b)=>b._pc-a._pc).map(e=>`<tr><td><b>${esc(e.nome)}</b><br><span class="mut">${esc(e.email||'')}</span></td><td class="n">${brl(e._mes)}</td><td class="n">${brl(e._fat)}</td>
+   <td><span class="pill ${e._pc>=90?'p-out':e._pc>=80?'p-w':'p-in'}">${Math.round(e._pc)}%</span></td>
+   <td><span class="pill ${e._das==='ok'?'p-in':e._das==='late'?'p-w':'p-g'}">${e._das==='ok'?'Pago':e._das==='late'?'Não lançado':'A vencer'}</span></td>
+   <td>${e._ult?fmtData(e._ult):'<span class="mut">nunca</span>'}</td><td><button data-ver="${esc(e.uid)}" style="min-height:40px">Ver</button></td></tr>`).join('')}</tbody></table>`:'<p class="mut">Nenhum cliente entrou ainda. Envie os convites abaixo.</p>'}</div>
+ ${A.sel?vAdminDet():''}
+ <div class="card"><h2>Convidar cliente</h2><p class="mut" style="margin:4px 0 12px">Só e-mails convidados conseguem criar acesso. Depois de convidar, mande a mensagem pronta para o cliente.</p>
+  <form id="fconv" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end" class="cv">
+   <label>Nome do cliente<input name="nome" required></label><label>E-mail do cliente<input name="email" type="email" required></label><button class="pri" type="submit">Convidar</button></form>
+  <div style="margin-top:14px">${A.conv.map(c=>{const ok=E.some(e=>(e.email||'').toLowerCase()===c.email);return `<div class="li"><div><b>${esc(c.nome||'')}</b><div class="d">${esc(c.email)}</div></div>
+   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${ok?'p-in':'p-w'}">${ok?'Usando':'Aguardando'}</span><button data-msg="${esc(c.email)}" style="min-height:40px">Mensagem</button>${ok?'':`<button class="x" data-delconv="${esc(c.email)}" aria-label="Remover convite">×</button>`}</div></div>`}).join('')}</div></div>
+ </main>`}
+function vAdminDet(){
+ const e=S.admin.emps.find(x=>x.uid===S.admin.sel);if(!e)return '';
+ const L=S.admin.lanc,LM=doMes(L,S.ano,S.mes),r=relatorioDados(LM);
+ return `<div class="card" id="det"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>${esc(e.nome)}</h2><button id="fechadet" style="min-height:40px">Fechar</button></div>
+  <div class="mnav" style="margin-top:10px"><button data-ames="-1" aria-label="Mês anterior">‹</button><h3 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h3><button data-ames="1" aria-label="Próximo mês">›</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><span class="pill p-in">Entrou ${brl(soma(LM,'in'))}</span><span class="pill p-out">Saiu ${brl(soma(LM,'out'))}</span>
+   <span class="pill p-g">Comércio ${brl(r.comercio[0]+r.comercio[1])}</span><span class="pill p-g">Indústria ${brl(r.industria[0]+r.industria[1])}</span><span class="pill p-g">Serviços ${brl(r.servico[0]+r.servico[1])}</span><span class="pill p-w">Sem nota ${brl(r.comercio[0]+r.industria[0]+r.servico[0])}</span></div>
+  ${LM.length?LM.sort((a,b)=>b.data.localeCompare(a.data)).map(l=>itemLanc(l,false)).join(''):'<p class="mut">Sem lançamentos neste mês.</p>'}</div>`}
+function msgConvite(c){
+ const url=location.href.split('#')[0];
+ return `Olá, ${c.nome||''}! Liberamos seu acesso ao *JM Gestão+*, o app da JM Gestão Contábil para organizar o financeiro do seu negócio.\n\n1. Abra: ${url}\n2. Toque em *Primeiro acesso*\n3. Use este e-mail: ${c.email}\n4. Crie uma senha\n\nSão 4 perguntas rápidas e pronto. Qualquer dúvida, é só chamar aqui.`}
+
+/* ===================== NAVEGAÇÃO ===================== */
+function go(t){if(location.hash==='#'+t)render();else location.hash=t}
+function render(){
+ if(!S.user)return telaLogin();
+ if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
+ if(!S.emp)return telaOnboarding();
+ const h=location.hash.slice(1);S.tab=['inicio','extrato','relatorio','ajuda'].includes(h)?h:'inicio';
+ $('#app').innerHTML=({inicio:vInicio,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
+}
+async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
+ if(!S.isAdmin&&!S.lanc.some(l=>l.data.startsWith(S.ano+'-'))){S.lanc=await API.listLanc(S.user.uid,S.ano)}render()}
+function bindAdmin(){
+ const f=$('#fconv');if(f)f.onsubmit=async e=>{e.preventDefault();const d=new FormData(f);try{await API.addConv(d.get('email'),d.get('nome').trim());S.admin.conv=await API.listConv();render();toast('Convite criado. Toque em "Mensagem" para enviar ao cliente.')}catch(err){toast(errMsg(err))}}}
+
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('button,[data-modo]');if(!t)return;const ds=t.dataset;
+ if(ds.modo){telaLogin(ds.modo);return}
+ if(t.id==='sair'){await API.logout();S.user=null;S.emp=null;S.isAdmin=false;location.hash='';if(DEMO)telaLogin();return}
+ if(t.id==='obg'){obNext();return}
+ if(t.id==='obv'){S.ob.step--;telaOnboarding();return}
+ if(ds.tipo&&!S.emp){S.ob.tipo=ds.tipo;telaOnboarding();return}
+ if(ds.das&&!S.emp){S.ob.das=ds.das==='1';telaOnboarding();return}
+ if(ds.dica){S.emp.dicas={...(S.emp.dicas||{}),[ds.dica]:true};API.saveEmp(S.user.uid,{dicas:S.emp.dicas});render();return}
+ if(t.id==='revdicas'){S.emp.dicas={};await API.saveEmp(S.user.uid,{dicas:{}});toast('As dicas vão aparecer de novo');go('inicio');return}
+ if(ds.novo){abrirNovo(ds.novo);return}
+ if(ds.das&&S.emp){abrirNovo('out',{cat:'das',desc:'DAS de '+(dasInfo(S.lanc).comp||''),valor:''});return}
+ if(t.id==='shx'){fecharSheet();return}
+ if(ds.cat){guardaCampos();S.sh.cat=ds.cat;if(!isFat({tipo:'in',cat:ds.cat}))S.sh.nota=false;renderSheet();return}
+ if(ds.forma){guardaCampos();S.sh.forma=ds.forma;renderSheet();return}
+ if(ds.nota&&S.sh){guardaCampos();S.sh.nota=ds.nota==='1';renderSheet();return}
+ if(t.id==='salvar'){salvarLanc();return}
+ if(ds.del){const l=S.lanc.find(x=>String(x.id)===ds.del);confirmar('Apagar '+(l.tipo==='in'?'recebimento':'pagamento')+' de '+brl(l.valor)+'?',async()=>{try{await API.delLanc(S.user.uid,l.id);S.lanc=S.lanc.filter(x=>x!==l);render();toast('Lançamento apagado')}catch(err){toast(errMsg(err))}});return}
+ if(ds.mes){mudaMes(+ds.mes);return}
+ if(t.id==='relcopy'){const tx=$('#relbox').innerText;try{await navigator.clipboard.writeText(tx);toast('Relatório copiado')}catch(err){toast('Não deu para copiar neste aparelho')}return}
+ if(t.id==='relprint'){try{window.print()}catch(err){toast('Impressão indisponível aqui')}return}
+ if(ds.ver){S.admin.sel=ds.ver;S.ano=new Date().getFullYear();S.mes=new Date().getMonth()+1;S.admin.lanc=await API.listLanc(ds.ver,S.ano);render();setTimeout(()=>$('#det')?.scrollIntoView({behavior:'smooth'}),50);return}
+ if(t.id==='fechadet'){S.admin.sel=null;render();return}
+ if(ds.ames){S.mes+=+ds.ames;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}S.admin.lanc=await API.listLanc(S.admin.sel,S.ano);render();return}
+ if(ds.delconv){confirmar('Remover o convite de '+ds.delconv+'?',async()=>{await API.delConv(ds.delconv);S.admin.conv=await API.listConv();render()},'Remover');return}
+ if(ds.msg){const c=S.admin.conv.find(x=>x.email===ds.msg),m=msgConvite(c);
+  $('#sbox').innerHTML=`<div class="hd"><h2>Mensagem para ${esc(c.nome||c.email)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><textarea id="msgtx" style="width:100%;min-height:220px;font:15px/1.5 Montserrat,sans-serif;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card);color:var(--ink)">${esc(m)}</textarea><button class="pri w" id="cpmsg" style="margin-top:10px">Copiar mensagem</button>`;
+  $('#sheet').classList.add('on');return}
+ if(t.id==='cpmsg'){try{await navigator.clipboard.writeText($('#msgtx').value);toast('Mensagem copiada. Cole no WhatsApp do cliente.')}catch(err){$('#msgtx').select();toast('Selecionei o texto: copie com o dedo ou Ctrl+C')}return}
+});
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')fecharSheet()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('#sheet').classList.contains('on'))fecharSheet();if(e.key==='Enter'&&S.sh&&e.target.tagName==='INPUT'){e.preventDefault();salvarLanc()}});
+window.addEventListener('hashchange',()=>{if(S.user&&!S.isAdmin&&S.emp){fecharSheet();render();scrollTo(0,0)}});
+
+async function iniciar(u){
+ S.user=u;if(!u){render();return}
+ S.isAdmin=isAdminEmail(u.email);
+ $('#app').innerHTML='<div class="center"><p class="mut">Carregando…</p></div>';
+ try{
+  if(S.isAdmin){await carregarAdmin()}
+  else{S.emp=await API.getEmp(u.uid);if(S.emp)S.lanc=await API.listLanc(u.uid,S.ano)}
+  render()}
+ catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div><button class="w" style="margin-top:12px" id="sair">Voltar</button></div></div>`}
+}
+
+(async()=>{
+ if(DEMO){const b=document.createElement('div');b.className='demo';b.textContent='Demonstração';document.body.appendChild(b)}
+ try{await API.init()}catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div></div></div>`;return}
+ API.onUser(iniciar);
+ if(!DEMO&&'serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
+})();
+}
+</script>
+</body>
+</html>
