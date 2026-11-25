@@ -163,7 +163,7 @@ const demoStore={
  get(k,d){return k in mem?mem[k]:(mem[k]=LS.get(k,d))},
  set(k,v){mem[k]=v;LS.set(k,v)}};
 function seedDemo(){
- if(demoStore.get('seeded',false)&&demoStore.get('emp_demo-oficina',null))return;
+ if(demoStore.get('seeded',false)&&(demoStore.get('emp_demo-oficina',{})||{}).cnpj)return;
  const y=new Date().getFullYear(),m=new Date().getMonth()+1;
  const emp={uid:'demo-mei',nome:'Studio Bella Estética',email:'bella@exemplo.com',tipo:'servico',abertura:'2024-03',dasLembrete:true,cnpj:'',dicas:{},criadoEm:hoje()};
  const L=[];let id=1;const add=(mm,d,tipo,cat,valor,forma,nota,desc)=>{if(mm<1)return;L.push({id:'d'+(id++),tipo,cat,valor,forma,nota,desc,data:y+'-'+pad(mm)+'-'+pad(d)})};
@@ -194,6 +194,7 @@ function seedDemo(){
  demoStore.set('os_demo-oficina',[{id:'x1',num:1,cli:'João Pereira',fone:'67999993333',veiculo:'Gol 2012',placa:'ABC1D23',problema:'Barulho na suspensão',status:'entregue',data:addDia(hoje(),-5),entregueEm:addDia(hoje(),-3),forma:'Pix',itens:[{tipo:'peca',desc:'Amortecedores dianteiros',valor:420},{tipo:'mao',desc:'Troca dos amortecedores',valor:350}]},
   {id:'x2',num:2,cli:'Marcos Lima',fone:'67999994444',veiculo:'Hilux 2018',placa:'QWE4R56',problema:'Revisão 60 mil km',status:'pronto',data:addDia(hoje(),-1),itens:[{tipo:'peca',desc:'Óleo e filtros',valor:390},{tipo:'mao',desc:'Revisão',valor:250}]},
   {id:'x3',num:3,cli:'Paulo Souza',fone:'67999995555',veiculo:'Honda CG 160',placa:'MOT0A12',problema:'Não liga',status:'orcamento',data:hoje(),itens:[{tipo:'peca',desc:'Bateria',valor:210},{tipo:'mao',desc:'Diagnóstico e instalação',valor:60}]}]);
+ for(const [u,c] of Object.entries({"demo-mei": "11222333000181", "demo-loja": "22333444000181", "demo-barba": "33444555000181", "demo-oficina": "44555666000181", "demo-2": "55666777000181"})){const e=demoStore.get('emp_'+u,null);if(e&&!e.cnpj)demoStore.set('emp_'+u,{...e,cnpj:c,cnpjConferido:false})}
  demoStore.set('seeded',true);
 }
 const API={
@@ -346,14 +347,62 @@ function telaLogin(modo='entrar',msg=''){
   }catch(err){S.busy=false;b.disabled=false;telaLogin(modo,`<div class="err">${esc(errMsg(err))}</div>`)}};
 }
 
+/* ===================== CNPJ: validação e consulta pública ===================== */
+const soDig=s=>String(s||'').replace(/\D/g,'');
+const fmtCNPJ=s=>{const d=soDig(s).slice(0,14);return d.replace(/^(\d{2})(\d)/,'$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/,'$1.$2.$3').replace(/\.(\d{3})(\d)/,'.$1/$2').replace(/(\d{4})(\d)/,'$1-$2')};
+function cnpjOk(c){const d=soDig(c);if(d.length!==14||/^(\d)\1+$/.test(d))return false;
+ const dv=n=>{let s=0,p=n-7;for(let i=0;i<n;i++){s+=+d[i]*p--;if(p<2)p=9}const r=s%11;return r<2?0:11-r};return dv(12)===+d[12]&&dv(13)===+d[13]}
+// tira CPF e números da razão social (MEI antigo traz o CPF no nome) — o app nunca guarda CPF
+const semCPF=s=>String(s||'').replace(/\d{3}\.?\d{3}\.?\d{3}-?\d{2}/g,'').replace(/\s{2,}/g,' ').trim();
+const nomeDeRazao=s=>{const t=semCPF(s).replace(/^\d{2}\.?\d{3}\.?\d{3}\s*/,'').replace(/\s+\d+$/,'').trim().toLowerCase();
+ return t.replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/\s(De|Da|Do|Das|Dos|E)(?=\s)/g,m=>m.toLowerCase())};
+async function consultaCNPJ(c){const d=soDig(c),fx=async u=>{const ac=new AbortController(),t=setTimeout(()=>ac.abort(),9000);try{const r=await fetch(u,{signal:ac.signal});if(r.status===404)throw Object.assign(new Error('nao'),{nao:1});if(!r.ok)throw new Error('http '+r.status);return await r.json()}finally{clearTimeout(t)}};
+ try{const j=await fx('https://brasilapi.com.br/api/cnpj/v1/'+d);
+  return {razao:j.razao_social,fantasia:j.nome_fantasia||'',situacao:j.descricao_situacao_cadastral||'',mei:!!j.opcao_pelo_mei,abertura:j.data_inicio_atividade||'',cnae:String(j.cnae_fiscal||''),cnaeDesc:j.cnae_fiscal_descricao||'',cidade:j.municipio||'',uf:j.uf||''}}
+ catch(e){if(e.nao)throw e;
+  const j=await fx('https://publica.cnpj.ws/cnpj/'+d),es=j.estabelecimento||{};
+  return {razao:j.razao_social,fantasia:es.nome_fantasia||'',situacao:es.situacao_cadastral||'',mei:(j.simples||{}).mei==='Sim',abertura:es.data_inicio_atividade||'',cnae:soDig((es.atividade_principal||{}).subclasse||(es.atividade_principal||{}).id),cnaeDesc:(es.atividade_principal||{}).descricao||'',cidade:(es.cidade||{}).nome||'',uf:(es.estado||{}).sigla||''}}}
+function ramoDoCnae(c){c=String(c||'');if(c.startsWith('4520')||c.startsWith('4530')||c.startsWith('4543'))return{ramo:'oficina',tipo:'ambos'};
+ if(/^47(81|82)/.test(c))return{ramo:'loja',tipo:'comercio'};if(/^96025/.test(c))return{tipo:'servico'};if(/^4[5-7]/.test(c))return{tipo:'comercio'};return c?{tipo:'servico'}:{}}
+// bloco reutilizado no primeiro acesso e em "Meus dados"
+function blocoCNPJ(o){const r=o.cnpjDados;
+ return `<label>CNPJ<input id="cnpjin" inputmode="numeric" autocomplete="off" value="${esc(fmtCNPJ(o.cnpj||''))}" placeholder="00.000.000/0000-00"></label>
+ <div id="cnpjres">${o.cnpjBusca==='busca'?'<p class="mut">Buscando na Receita…</p>':o.cnpjBusca==='erro'?`<div class="tip"><b>!</b><p>Não conseguimos buscar agora. Confira o número; se estiver certo, pode seguir e preencher o nome abaixo.</p></div>`:o.cnpjBusca==='nao'?'<div class="err">CNPJ não encontrado na Receita. Confira os números.</div>':''}
+ ${r?`<div class="card" style="padding:12px 14px;margin:0"><b>${esc(semCPF(r.razao))}</b><div class="mut" style="font-size:14px;margin-top:4px">${esc([r.cidade&&r.cidade+(r.uf?'/'+r.uf:''),r.mei?'MEI':'',r.abertura&&'aberta em '+r.abertura.split('-').reverse().join('/')].filter(Boolean).join(' · '))}<br>${esc(r.cnaeDesc)}</div>
+  ${r.situacao&&!/ativa/i.test(r.situacao)?`<div class="err" style="margin-top:8px">Situação na Receita: ${esc(r.situacao)}. Fale com o escritório.</div>`:`<span class="pill p-in" style="margin-top:8px">Situação: ativa</span>`}</div>`:''}</div>
+ <label>Como sua empresa se apresenta<input id="apres" maxlength="60" value="${esc(o.nome||'')}" placeholder="Ex.: Barbearia do Zé"></label>
+ <p class="mut" style="margin:-4px 0 0;font-size:14px">É o nome que aparece no app e nas mensagens de WhatsApp. ${r&&!r.fantasia?'MEI não tem nome fantasia: escreva como seus clientes conhecem você.':'Pode mudar quando quiser.'}</p>`}
+function ligaCNPJ(o,redesenha){const i=$('#cnpjin');if(!i)return;
+ i.oninput=async()=>{const p=i.selectionStart===i.value.length;i.value=fmtCNPJ(i.value);const d=soDig(i.value);o.cnpj=d;o.nome=$('#apres').value;
+  if(d.length<14){if(o.cnpjDados||o.cnpjBusca){o.cnpjDados=null;o.cnpjBusca='';redesenha();$('#cnpjin').focus()}return}
+  if(!cnpjOk(d)){$('#cnpjres').innerHTML='<div class="err">Esse CNPJ não é válido. Confira os números.</div>';return}
+  if(o.cnpjDados&&o.cnpjDe===d)return;
+  o.cnpjBusca='busca';o.cnpjDados=null;redesenha();
+  try{const r=await consultaCNPJ(d);if(o.cnpj!==d)return;o.cnpjDados=r;o.cnpjDe=d;o.cnpjBusca='';
+   if(!o.nomeMexido)o.nome=r.fantasia?nomeDeRazao(r.fantasia):nomeDeRazao(r.razao);
+   const sg=ramoDoCnae(r.cnae);if(!o.tipo&&sg.tipo)o.tipo=sg.tipo;if(!o.ramoSug&&sg.ramo)o.ramoSug=sg.ramo;if(!o.abertura&&r.abertura)o.abertura=r.abertura.slice(0,7)}
+  catch(e){if(o.cnpj!==d)return;o.cnpjBusca=e.nao?'nao':'erro'}
+  redesenha()};
+ $('#apres').oninput=e=>{o.nome=e.target.value;o.nomeMexido=true}}
+function validaCNPJ(o){if(!soDig(o.cnpj))return'Informe o CNPJ da empresa.';if(!cnpjOk(o.cnpj))return'Esse CNPJ não é válido. Confira os números.';if(o.cnpjBusca==='nao')return'CNPJ não encontrado na Receita. Confira os números.';if(o.cnpjBusca==='busca')return'Aguarde a busca do CNPJ terminar.';if(!String(o.nome||'').trim())return'Escreva como sua empresa se apresenta.';return''}
+function camposCNPJ(o){const r=o.cnpjDados;const c={cnpj:soDig(o.cnpj),nome:String(o.nome).trim().slice(0,60),cnpjConferido:!!r};
+ if(r)Object.assign(c,{razao:semCPF(r.razao).slice(0,120),cnae:r.cnae.slice(0,10),cnaeDesc:String(r.cnaeDesc).slice(0,120),cidade:String(r.cidade).slice(0,60),uf:String(r.uf).slice(0,2),mei:r.mei});return c}
+// "Meus dados": completar/editar CNPJ de quem já usa o app
+function abrirDadosEmpresa(){const o=S.cd={cnpj:S.emp.cnpj||'',nome:S.emp.nome||'',nomeMexido:!!S.emp.nome};
+ const desenha=()=>{$('#sbox').innerHTML=`<div class="hd"><h2>Dados da empresa</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">${blocoCNPJ(o)}<div id="cderr"></div><button class="pri w" id="cdsalva" style="min-height:54px">Salvar</button></div>`;ligaCNPJ(o,desenha)};
+ desenha();$('#sheet').classList.add('on')}
+document.addEventListener('click',async e=>{const t=e.target.closest('button');if(!t)return;
+ if(t.id==='abredados'){abrirDadosEmpresa();return}
+ if(t.id==='cdsalva'){const o=S.cd,m=validaCNPJ(o);if(m){$('#cderr').innerHTML=`<div class="err">${m}</div>`;return}
+  const up=camposCNPJ(o);try{await API.saveEmp(S.user.uid,up);Object.assign(S.emp,up);fecharSheet();render();toast('Dados da empresa salvos')}catch(err){$('#cderr').innerHTML=`<div class="err">${esc(errMsg(err))}</div>`}}});
+
 /* ===================== PRIMEIRO ACESSO ===================== */
 function telaOnboarding(){
  const o=S.ob,st=o.step;let body='';
- if(st===1)body=`<h2>Como se chama o seu negócio?</h2><p class="mut">É o nome que seus clientes conhecem.</p>
-  <label>Nome do negócio<input id="obn" value="${esc(o.nome||'')}" placeholder="Ex.: Doce Sabor"></label>`;
- if(st===2)body=`<h2>O que você faz?</h2><p class="mut">Isso organiza o seu relatório do MEI.</p><div class="opt">
+ if(st===1)body=`<h2>Qual é o CNPJ da sua empresa?</h2><p class="mut">A gente busca os dados na Receita para você não precisar digitar.</p>${blocoCNPJ(o)}`;
+ if(st===2)body=`<h2>O que você faz?</h2><p class="mut">${o.cnpjDados?'Já marcamos pelo CNPJ. Confira:':'Isso organiza o seu relatório do MEI.'}</p><div class="opt">
   ${[['servico','Presto serviço','cabeleireira, eletricista, manicure…'],['comercio','Vendo produtos','loja, revenda, lanches prontos…'],['ambos','Os dois','vendo e também presto serviço']].map(x=>`<button data-tipo="${x[0]}" class="${o.tipo===x[0]?'on':''}"><b>${x[1]}</b><span class="mut">${x[2]}</span></button>`).join('')}</div>`;
- if(st===3)body=`<h2>Quando você abriu o MEI?</h2><p class="mut">Serve para calcular certinho o seu limite de faturamento no ano.</p>
+ if(st===3)body=`<h2>Quando você abriu o MEI?</h2><p class="mut">${o.cnpjDados&&o.cnpjDados.abertura?'Pegamos a data de abertura do CNPJ. Confira:':'Serve para calcular certinho o seu limite de faturamento no ano.'}</p>
   <label>Mês e ano de abertura<input id="oba" type="month" value="${esc(o.abertura||'')}" max="${hoje().slice(0,7)}"></label>`;
  if(st===4)body=`<h2>Quer um lembrete do DAS?</h2><p class="mut">O DAS é o imposto mensal do MEI e vence todo dia 20. A gente te avisa na tela inicial.</p>
   <div class="yn"><button data-das="1" class="${o.das!==false?'on':''}">Sim, quero</button><button data-das="0" class="${o.das===false?'on':''}">Não precisa</button></div>`;
@@ -362,15 +411,15 @@ function telaOnboarding(){
   <div class="stack">${body}<div id="oberr"></div>
   <div style="display:grid;grid-template-columns:${st>1?'1fr 2fr':'1fr'};gap:10px">${st>1?'<button id="obv">Voltar</button>':''}<button class="pri" id="obg">${st<4?'Continuar':'Começar a usar'}</button></div></div></div>
   <p class="mut" style="text-align:center">Passo ${st} de 4</p></div></div>`;
- const f=$('#obn')||$('#oba');if(f)f.focus();
+ if(st===1)ligaCNPJ(o,telaOnboarding);const f=st===1?(soDig(o.cnpj).length===14?$('#apres'):$('#cnpjin')):$('#oba');if(f){f.focus();if(f.id==='cnpjin')f.setSelectionRange(f.value.length,f.value.length)}
 }
 async function obNext(){
  const o=S.ob,e=m=>{$('#oberr').innerHTML=`<div class="err">${m}</div>`};
- if(o.step===1){o.nome=$('#obn').value.trim();if(!o.nome)return e('Escreva o nome do negócio.')}
+ if(o.step===1){o.nome=$('#apres').value.trim();const m=validaCNPJ(o);if(m)return e(m)}
  if(o.step===2&&!o.tipo)return e('Escolha uma opção.');
  if(o.step===3){o.abertura=$('#oba').value;if(!o.abertura)return e('Informe o mês e o ano. Se não lembrar, use um valor aproximado.')}
  if(o.step<4){o.step++;return telaOnboarding()}
- const emp={nome:o.nome,tipo:o.tipo,abertura:o.abertura,dasLembrete:o.das!==false,email:S.user.email,dicas:{},criadoEm:hoje()};
+ const emp={...camposCNPJ(o),tipo:o.tipo,abertura:o.abertura,dasLembrete:o.das!==false,email:S.user.email,dicas:{},criadoEm:hoje(),...(o.ramoSug?{ramo:o.ramoSug}:{})};
  try{await API.saveEmp(S.user.uid,emp);S.emp={uid:S.user.uid,...emp};S.lanc=[];go('inicio');toast('Pronto! Seu app está configurado.')}
  catch(err){e(esc(errMsg(err)))}
 }
@@ -404,6 +453,7 @@ function vInicio(){
  <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
  ${(()=>{if(!usaAgenda())return'';const L=doDia(hoje()).filter(a=>a.status!=='faltou');const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
  ${usaCred()?(()=>{const r=resumoCred();return `<a href="#fiado" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Crediário</b><div class="mut">${r.rec?brl(r.rec)+' a receber'+(r.atr?' · <b style="color:var(--out)">'+brl(r.atr)+' atrasado</b>':''):'Ninguém devendo'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
+ ${S.emp.cnpj?'':`<div class="card" style="border-color:var(--gold)"><h3>Complete seu cadastro</h3><p class="mut" style="margin:4px 0 10px">Falta o CNPJ da empresa. A gente busca o resto na Receita.</p><button class="pri w" id="abredados">Informar CNPJ</button></div>`}
  ${blocoRamo()}
  ${usaOS()?(()=>{const ab=OS.lista.filter(o=>o.status!=='entregue');return `<a href="#os" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Ordens de serviço</b><div class="mut">${ab.length?ab.length+' em aberto · '+brl(ab.reduce((s,o)=>s+totOS(o),0))+(ab.filter(o=>o.status==='pronto').length?' · '+ab.filter(o=>o.status==='pronto').length+' pronta(s)':''):'Nenhuma em aberto'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
  ${dica('inicio')}
@@ -453,9 +503,9 @@ function vAjuda(){ setTimeout(()=>{const m=$('main');if(m&&!$('#mudaramo')){m.in
  return shell(`<h1>Ajuda</h1>${dica('ajuda')}
  ${itens.map(i=>`<details class="card"><summary style="cursor:pointer;font-weight:600;min-height:28px">${i[0]}</summary><p style="margin:10px 0 0">${i[1]}</p></details>`).join('')}
  ${WHATSAPP?`<a class="card" style="display:block;text-decoration:none;color:inherit" href="https://wa.me/55${esc(WHATSAPP)}"><h3>Falar com o escritório no WhatsApp</h3><p class="mut" style="margin:4px 0 0">(${esc(WHATSAPP.slice(0,2))}) ${esc(WHATSAPP.slice(2))}</p></a>`:''}
- <div class="card"><h3>Meus dados</h3><p class="mut" style="margin:6px 0 0">${esc(S.emp.nome)} · ${({servico:'Presta serviço',comercio:'Vende produtos',ambos:'Vende e presta serviço'})[S.emp.tipo]} · MEI desde ${esc((S.emp.abertura||'').split('-').reverse().join('/'))}</p>
+ <div class="card"><h3>Meus dados</h3><p class="mut" style="margin:6px 0 0">${S.emp.cnpj?'CNPJ '+esc(fmtCNPJ(S.emp.cnpj))+(S.emp.razao?' · '+esc(S.emp.razao):'')+'<br>':'<b style="color:var(--out)">CNPJ não informado</b><br>'}${esc(S.emp.nome)} · ${({servico:'Presta serviço',comercio:'Vende produtos',ambos:'Vende e presta serviço'})[S.emp.tipo]} · MEI desde ${esc((S.emp.abertura||'').split('-').reverse().join('/'))}</p>
   <label style="margin-top:12px;flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" id="daschk" style="width:24px;min-height:24px" ${S.emp.dasLembrete?'checked':''}> Mostrar lembrete do DAS</label>
-  <button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
+  <button id="abredados" style="margin-top:10px">${S.emp.cnpj?'Editar dados da empresa':'Informar CNPJ'}</button><br><button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
  <p class="mut" style="text-align:center">JM Gestão+ · versão piloto · JM Gestão Contábil e Perícias</p>`)}
 
 /* ===================== LANÇAMENTO ===================== */
@@ -508,7 +558,7 @@ function vAdmin(){
   <div class="card"><div class="mut">Perto do limite (80%+)</div><div class="big">${E.filter(e=>e._pc>=80).length}</div></div></div>
  <div class="card scroll"><h2 style="margin-bottom:8px">Clientes no piloto</h2>
   ${E.length?`<table class="adm stk"><thead><tr><th>Cliente</th><th class="n">Faturamento no mês</th><th class="n">No ano</th><th>Limite MEI</th><th>DAS</th><th>Último lançamento</th><th></th></tr></thead><tbody>
-  ${E.sort((a,b)=>b._pc-a._pc).map(e=>`<tr><td><b>${esc(e.nome)}</b><br><span class="mut">${esc(e.email||'')}</span></td><td class="n">${brl(e._mes)}</td><td class="n">${brl(e._fat)}</td>
+  ${E.sort((a,b)=>b._pc-a._pc).map(e=>`<tr><td><b>${esc(e.nome)}</b><br><span class="mut">${e.cnpj?esc(fmtCNPJ(e.cnpj))+' · ':'<span style="color:var(--out)">sem CNPJ</span> · '}${esc(e.email||'')}</span></td><td class="n">${brl(e._mes)}</td><td class="n">${brl(e._fat)}</td>
    <td><span class="pill ${e._pc>=90?'p-out':e._pc>=80?'p-w':'p-in'}">${Math.round(e._pc)}%</span></td>
    <td><span class="pill ${e._das==='ok'?'p-in':e._das==='late'?'p-w':'p-g'}">${e._das==='ok'?'Pago':e._das==='late'?'Não lançado':'A vencer'}</span></td>
    <td>${e._ult?fmtData(e._ult):'<span class="mut">nunca</span>'}</td><td><button data-ver="${esc(e.uid)}" style="min-height:40px">Ver</button></td></tr>`).join('')}</tbody></table>`:'<p class="mut">Nenhum cliente entrou ainda. Envie os convites abaixo.</p>'}</div>
