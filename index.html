@@ -66,7 +66,7 @@ label{display:grid;gap:6px;font-size:14px;color:var(--mut);font-weight:500}
 .v.in{color:var(--in)}.v.out{color:var(--out)}
 .x{min-height:36px;width:36px;padding:0;border-radius:10px;font-size:18px;color:var(--mut)}
 .day{font-size:13px;font-weight:600;color:var(--mut);margin-top:14px}
-nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(4,1fr);padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom));z-index:5}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom));z-index:5}
 nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--mut);text-decoration:none;font-size:12px;font-weight:600}
 nav.tabs a.on{color:var(--gold);background:var(--goldsoft)}
 nav.tabs svg{width:24px;height:24px}
@@ -226,6 +226,17 @@ const API={
   if(DEMO){const L=demoStore.get('lanc_'+uid,[]);const n={...l,id:'n'+Date.now()};L.push(n);demoStore.set('lanc_'+uid,L);return n}
   const r=await db.collection('empresas').doc(uid).collection('lanc').add({...l,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...l,id:r.id}},
  async delLanc(uid,id){if(DEMO){demoStore.set('lanc_'+uid,demoStore.get('lanc_'+uid,[]).filter(l=>l.id!==id));return}await db.collection('empresas').doc(uid).collection('lanc').doc(id).delete()},
+ async listAgenda(uid,de,ate){
+  if(DEMO)return demoStore.get('ag_'+uid,[]).filter(a=>a.data>=de&&a.data<=ate);
+  const q=await db.collection('empresas').doc(uid).collection('agenda').where('data','>=',de).where('data','<=',ate).get();
+  return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async addAgenda(uid,a){
+  if(DEMO){const L=demoStore.get('ag_'+uid,[]);const n={...a,id:'a'+Date.now()};L.push(n);demoStore.set('ag_'+uid,L);return n}
+  const r=await db.collection('empresas').doc(uid).collection('agenda').add({...a,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...a,id:r.id}},
+ async updAgenda(uid,id,a){
+  if(DEMO){demoStore.set('ag_'+uid,demoStore.get('ag_'+uid,[]).map(x=>x.id===id?{...x,...a}:x));return}
+  await db.collection('empresas').doc(uid).collection('agenda').doc(id).update(a)},
+ async delAgenda(uid,id){if(DEMO){demoStore.set('ag_'+uid,demoStore.get('ag_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('agenda').doc(id).delete()},
  async listEmps(){
   if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
    return ks.filter((k,i,a)=>k.startsWith('emp_')&&a.indexOf(k)===i).map(k=>demoStore.get(k,null)).filter(Boolean)}
@@ -334,11 +345,12 @@ const IC={
  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
  extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
  relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
 function shell(inner){
  return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><button id="sair">Sair</button></div></header>
  <main class="wrap">${inner}</main>
- <nav class="tabs" aria-label="Menu">${[['inicio','Início'],['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']].map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
+ <nav class="tabs" aria-label="Menu">${[['inicio','Início'],['agenda','Agenda'],['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']].map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
 
 function vInicio(){
  const a=S.ano,m=S.mes,LM=doMes(S.lanc,new Date().getFullYear(),new Date().getMonth()+1);
@@ -352,6 +364,7 @@ function vInicio(){
  <div class="card saldo"><div class="l">Saldo de ${MESES[new Date().getMonth()]}</div><div class="big">${brl(ent-sai)}</div>
   <div class="row"><span>Entrou <b>${brl(ent)}</b></span><span>Saiu <b>${brl(sai)}</b></span></div></div>
  <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
+ ${(()=>{const L=doDia(hoje()).filter(a=>a.status!=='faltou');if(!L.length&&!servicos().length&&S.emp.tipo!=='servico')return'';const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
  ${dica('inicio')}
  ${S.emp.dasLembrete?`<div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
   <div style="flex:1 1 220px"><h3>Imposto do mês (DAS)</h3><p class="mut" style="margin:4px 0 0">${das.txt}</p></div>
@@ -478,13 +491,151 @@ function msgConvite(c){
  return `Olá, ${c.nome||''}! Liberamos seu acesso ao *JM Gestão+*, o app da JM Gestão Contábil para organizar o financeiro do seu negócio.\n\n1. Abra: ${url}\n2. Toque em *Primeiro acesso*\n3. Use este e-mail: ${c.email}\n4. Crie uma senha\n\nSão 4 perguntas rápidas e pronto. Qualquer dúvida, é só chamar aqui.`}
 
 /* ===================== NAVEGAÇÃO ===================== */
+/* ===================== AGENDA (prestador de serviço) ===================== */
+const AG={dia:hoje(),lista:[],ok:false,sh:null};
+const DSEM=['dom','seg','ter','qua','qui','sex','sáb'];
+const addDia=(d,n)=>{const x=new Date(d+'T12:00:00');x.setDate(x.getDate()+n);return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(x.getDate())};
+const dBR=d=>d.slice(8,10)+'/'+d.slice(5,7);
+const diaTxt=d=>{const x=new Date(d+'T12:00:00');const r=d===hoje()?'Hoje':d===addDia(hoje(),1)?'Amanhã':d===addDia(hoje(),-1)?'Ontem':DSEM[x.getDay()];return r+', '+dBR(d)};
+const foneWa=f=>{let n=String(f||'').replace(/\D/g,'');if(!n)return'';if(n.length<=11)n='55'+n;return n};
+const uidL=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const servicos=()=>S.emp.servicos||[];
+const clientesAg=()=>S.emp.clientes||[];
+async function carregarAgenda(){if(!S.user||S.isAdmin)return;try{AG.lista=await API.listAgenda(S.user.uid,addDia(hoje(),-120),addDia(hoje(),120));AG.ok=true}catch(e){AG.ok=false}}
+const doDia=d=>AG.lista.filter(a=>a.data===d).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+function vAgenda(){
+ const d=AG.dia,L=doDia(d);
+ const prev=L.filter(a=>a.status!=='faltou').reduce((s,a)=>s+(+a.valor||0),0),rec=L.filter(a=>a.status==='feito').reduce((s,a)=>s+(+a.valor||0),0);
+ const strip=[...Array(5)].map((_,i)=>addDia(d,i-2)).map(x=>{const n=doDia(x).length,dt=new Date(x+'T12:00:00');return `<button class="chip ${x===d?'on':''}" data-agdia="${x}" style="flex:1;min-width:44px;padding:0 4px;display:flex;flex-direction:column;justify-content:center;line-height:1.1;min-height:56px"><small style="font-size:11px">${DSEM[dt.getDay()]}</small><b>${x.slice(8,10)}</b>${n?`<small style="font-size:10px">${n}</small>`:''}</button>`}).join('');
+ const card=a=>{const st=a.status||'marcado',passou=a.data<=hoje();
+  return `<div class="li" style="align-items:flex-start"><div><div style="display:flex;gap:10px;align-items:baseline"><b class="v" style="font-size:18px">${esc(a.hora||'--:--')}</b><b>${esc(a.cli)}</b></div>
+   <div class="d">${esc(a.servico||'')}${a.obs?' · '+esc(a.obs):''}</div>
+   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+    ${st==='marcado'?`${passou?`<button class="chip" data-agrec="${a.id}" style="background:var(--in);border-color:var(--in);color:#fff">✓ Recebi</button>`:''}${a.fone?`<button class="chip" data-agwa="${a.id}">WhatsApp</button>`:''}${passou?`<button class="chip" data-agfal="${a.id}">Faltou</button>`:''}`:''}
+    ${st==='feito'?`<span class="pill p-in">Recebido${a.forma?' · '+esc(a.forma):''}</span>`:''}${st==='faltou'?`<span class="pill p-out">Faltou</span>`:''}
+    <button class="chip" data-agmais="${a.id}" aria-label="Mais opções">⋯</button></div></div>
+   <div class="v ${st==='feito'?'in':''}">${brl(a.valor)}</div></div>`};
+ const ret=retornos();
+ return shell(`
+  <div class="card saldo"><div class="l">Agenda · ${diaTxt(d)}</div><div class="big">${L.length} ${L.length===1?'horário':'horários'}</div>
+   <div class="row"><span>Previsto <b>${brl(prev)}</b></span><span>Recebido <b>${brl(rec)}</b></span></div></div>
+  <div class="mnav" style="margin-top:14px"><button data-agdia="${addDia(d,-5)}" aria-label="Dias anteriores">‹</button><div style="display:flex;gap:4px;flex:1;overflow:hidden">${strip}</div><button data-agdia="${addDia(d,5)}" aria-label="Próximos dias">›</button></div>
+  ${d!==hoje()?`<button class="lnk" data-agdia="${hoje()}">Voltar para hoje</button>`:''}
+  <button class="pri w" data-agnovo="1" style="margin-top:14px;min-height:56px;font-size:17px">+ Novo horário</button>
+  <div class="card">${L.length?L.map(card).join(''):`<p class="mut" style="margin:0">Nenhum horário neste dia. Toque em "+ Novo horário" para marcar.</p>`}</div>
+  ${ret.length?`<div class="card"><h3>Clientes para chamar de volta</h3><p class="mut" style="margin:4px 0 6px">Atendidas há mais de ${S.emp.retornoDias||30} dias e sem horário marcado.</p>
+   ${ret.slice(0,8).map(r=>`<div class="li"><div><b>${esc(r.cli)}</b><div class="d">Último: ${esc(r.servico||'')} em ${dBR(r.data)} · ${r.dias} dias</div></div><div>${r.fone?`<button class="chip" data-agvolta="${esc(r.cli)}">Chamar</button>`:''}</div></div>`).join('')}</div>`:''}
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div><h3>Meus serviços</h3><p class="mut" style="margin:2px 0 0">${servicos().length?servicos().map(s=>esc(s.nome)+' '+brl(s.preco)).join(' · '):'Cadastre os serviços e os preços para agendar mais rápido.'}</p></div><button data-agserv="1">Editar</button></div></div>`);
+}
+function retornos(){
+ const dias=S.emp.retornoDias||30,ult={},fut=new Set();
+ for(const a of AG.lista){const k=(a.cli||'').trim().toLowerCase();if(!k)continue;if(a.data>=hoje()&&a.status!=='faltou')fut.add(k);if(a.status==='feito'&&(!ult[k]||a.data>ult[k].data))ult[k]=a}
+ return Object.entries(ult).filter(([k,a])=>!fut.has(k)).map(([k,a])=>({...a,dias:Math.round((new Date(hoje())-new Date(a.data))/864e5)})).filter(a=>a.dias>dias).sort((a,b)=>b.dias-a.dias);
+}
+function sheetAg(html){$('#sbox').innerHTML=html;$('#sheet').classList.add('on')}
+function abrirHorario(id){
+ const a=id?AG.lista.find(x=>x.id===id):null;
+ AG.sh={id:a?.id||null,cli:a?.cli||'',fone:a?.fone||'',servico:a?.servico||'',valor:a?String(a.valor).replace('.',','):'',data:a?.data||AG.dia,hora:a?.hora||'',obs:a?.obs||''};
+ renderHorario();
+}
+function renderHorario(){const s=AG.sh;
+ sheetAg(`<div class="hd"><h2>${s.id?'Editar horário':'Novo horário'}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <div class="stack">
+   <label>Cliente<input id="agcli" list="agclis" value="${esc(s.cli)}" placeholder="Nome da cliente" autocomplete="off"></label>
+   <datalist id="agclis">${clientesAg().map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
+   <label>WhatsApp (opcional)<input id="agfone" type="tel" inputmode="tel" value="${esc(s.fone)}" placeholder="(67) 99999-9999"></label>
+   <div class="grp" style="margin:0"><div class="t">Serviço</div><div class="chips">${servicos().map(v=>`<button class="chip ${s.servico===v.nome?'on':''}" data-agsv="${esc(v.id)}">${esc(v.nome)}</button>`).join('')}</div>
+    <input id="agsvc" value="${esc(s.servico)}" placeholder="${servicos().length?'Ou digite outro serviço':'Ex.: Manicure e pedicure'}" style="margin-top:8px"></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Dia<input id="agdata" type="date" value="${esc(s.data)}"></label><label>Hora<input id="aghora" type="time" value="${esc(s.hora)}"></label></div>
+   <label>Valor (R$)<input id="agval" inputmode="decimal" value="${esc(s.valor)}" placeholder="0,00"></label>
+   <label>Observação (opcional)<input id="agobs" value="${esc(s.obs)}" maxlength="80"></label>
+   <div id="agerr"></div>
+   <button class="pri w" data-agsalva="1" style="min-height:54px">Salvar horário</button></div>`);
+ const cli=$('#agcli');cli.oninput=()=>{const c=clientesAg().find(x=>x.nome.toLowerCase()===cli.value.trim().toLowerCase());if(c&&c.fone&&!$('#agfone').value)$('#agfone').value=c.fone};
+}
+function guardaHorario(){const s=AG.sh;if(!s||!$('#agcli'))return;s.cli=$('#agcli').value;s.fone=$('#agfone').value;s.servico=$('#agsvc').value;s.data=$('#agdata').value;s.hora=$('#aghora').value;s.valor=$('#agval').value;s.obs=$('#agobs').value}
+async function salvarHorario(){
+ guardaHorario();const s=AG.sh,e=m=>{$('#agerr').innerHTML=`<div class="err">${m}</div>`};
+ const v=parseValor(s.valor||'0');
+ if(!s.cli.trim())return e('Digite o nome da cliente.');if(!s.data)return e('Escolha o dia.');if(!s.hora)return e('Escolha a hora.');if(s.valor&&!(v>=0))return e('Confira o valor. Ex.: 50 ou 49,90');
+ const d={cli:s.cli.trim().slice(0,60),fone:s.fone.trim().slice(0,20),servico:s.servico.trim().slice(0,60),valor:isFinite(v)?v:0,data:s.data,hora:s.hora,obs:s.obs.trim().slice(0,80)};
+ try{
+  if(s.id){await API.updAgenda(S.user.uid,s.id,d);const a=AG.lista.find(x=>x.id===s.id);Object.assign(a,d)}
+  else{const n=await API.addAgenda(S.user.uid,{...d,status:'marcado'});AG.lista.push(n)}
+  /* guarda a cliente e o serviço para a próxima vez */
+  let cl=clientesAg().slice(),k=d.cli.toLowerCase(),i=cl.findIndex(c=>c.nome.toLowerCase()===k),mud=false;
+  if(i<0){cl.push({nome:d.cli,fone:d.fone});mud=true}else if(d.fone&&cl[i].fone!==d.fone){cl[i]={...cl[i],fone:d.fone};mud=true}
+  let sv=servicos().slice();if(d.servico&&!sv.find(x=>x.nome.toLowerCase()===d.servico.toLowerCase())){sv.push({id:uidL(),nome:d.servico,preco:d.valor});mud=true}
+  if(mud){S.emp.clientes=cl.slice(-500);S.emp.servicos=sv.slice(0,40);await API.saveEmp(S.user.uid,{clientes:S.emp.clientes,servicos:S.emp.servicos})}
+  AG.dia=d.data;fecharSheet();AG.sh=null;render();toast('Horário de '+d.cli+' salvo: '+diaTxt(d.data).toLowerCase()+' às '+d.hora);
+ }catch(err){e(esc(errMsg(err)))}
+}
+function abrirRecebi(id){const a=AG.lista.find(x=>x.id===id);AG.sh={rec:id,forma:'Pix',valor:String(a.valor||'').replace('.',',')};renderRecebi()}
+function renderRecebi(){const s=AG.sh,a=AG.lista.find(x=>x.id===s.rec);
+ sheetAg(`<div class="hd"><h2>Recebi de ${esc(a.cli)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <p class="mut" style="margin:0 0 8px">${esc(a.servico||'Serviço')} · ${diaTxt(a.data)} às ${esc(a.hora||'')}</p>
+  <input id="recval" class="money" inputmode="decimal" value="${esc(s.valor)}" aria-label="Valor recebido">
+  <div class="grp"><div class="t">Como recebeu?</div><div class="chips">${FORMAS.map(f=>`<button class="chip ${s.forma===f?'on':''}" data-agforma="${f}">${f}</button>`).join('')}</div></div>
+  <div id="agerr"></div>
+  <button class="pri w" data-agrecok="1" style="margin-top:16px;min-height:54px">Confirmar recebimento</button>
+  <p class="mut" style="margin:10px 0 0">Entra direto no seu caixa como "Serviço prestado" e conta no faturamento do MEI.</p>`)}
+async function confirmarRecebi(){const s=AG.sh,a=AG.lista.find(x=>x.id===s.rec);s.valor=$('#recval').value;const v=parseValor(s.valor);
+ if(!(v>0))return $('#agerr').innerHTML='<div class="err">Digite o valor recebido.</div>';
+ try{const l={tipo:'in',valor:v,cat:'servico',forma:s.forma,nota:false,data:a.data,desc:((a.servico||'Serviço')+' - '+a.cli).slice(0,80)};
+  const n=await API.addLanc(S.user.uid,l);if(l.data.startsWith(S.ano+'-'))S.lanc.push(n);
+  const up={status:'feito',forma:s.forma,valor:v,lancId:n.id};await API.updAgenda(S.user.uid,a.id,up);Object.assign(a,up);
+  fecharSheet();AG.sh=null;render();toast('Recebimento de '+brl(v)+' salvo no caixa')}
+ catch(err){$('#agerr').innerHTML=`<div class="err">${esc(errMsg(err))}</div>`}}
+function msgConfirma(a){return `Olá, ${String(a.cli).split(' ')[0]}! Tudo bem? Passando para confirmar seu horário de ${a.servico||'atendimento'} ${a.data===hoje()?'hoje':a.data===addDia(hoje(),1)?'amanhã':'no dia '+dBR(a.data)} às ${a.hora}. Posso confirmar? 😊\n${S.emp.nome}`}
+function msgVolta(r){return `Oi, ${String(r.cli).split(' ')[0]}! Tudo bem? Faz um tempinho desde o seu último ${r.servico||'atendimento'}. Que tal marcar um horário esta semana? Tenho horários livres 😊\n${S.emp.nome}`}
+function abrirMais(id){const a=AG.lista.find(x=>x.id===id);
+ sheetAg(`<div class="hd"><h2>${esc(a.cli)} · ${esc(a.hora||'')}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">
+  ${a.status!=='feito'?`<button class="w" data-agedit="${a.id}">Editar horário</button>`:''}
+  ${a.fone?`<button class="w" data-agwa="${a.id}">Mandar confirmação no WhatsApp</button>`:''}
+  ${a.status==='feito'?`<button class="w" data-agdesf="${a.id}">Desfazer recebimento</button>`:''}
+  ${a.status==='faltou'?`<button class="w" data-agvolt="${a.id}">Voltar para marcado</button>`:''}
+  <button class="w" data-agapaga="${a.id}" style="color:var(--out)">Apagar horário</button></div>`)}
+function abrirServicos(){AG.sh={serv:servicos().map(s=>({...s}))};renderServicos()}
+function renderServicos(){const L=AG.sh.serv;
+ sheetAg(`<div class="hd"><h2>Meus serviços</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <p class="mut" style="margin:0 0 10px">O preço aparece sozinho quando você marca o horário.</p>
+  <div class="stack">${L.map((s,i)=>`<div style="display:grid;grid-template-columns:1fr 110px 44px;gap:8px;align-items:center"><input data-svn="${i}" value="${esc(s.nome)}" aria-label="Serviço"><input data-svp="${i}" inputmode="decimal" value="${s.preco?String(s.preco).replace('.',','):''}" placeholder="R$" aria-label="Preço"><button class="x" data-svdel="${i}" aria-label="Tirar">×</button></div>`).join('')}
+  <button data-svadd="1">+ Adicionar serviço</button>
+  <label>Lembrar de chamar de volta a cliente depois de quantos dias?<input id="agret" type="number" min="7" max="180" value="${S.emp.retornoDias||30}"></label>
+  <button class="pri w" data-svsalva="1" style="min-height:54px">Salvar</button></div>`)}
+function guardaServicos(){document.querySelectorAll('[data-svn]').forEach(x=>{AG.sh.serv[+x.dataset.svn].nome=x.value});document.querySelectorAll('[data-svp]').forEach(x=>{const v=parseValor(x.value||'0');AG.sh.serv[+x.dataset.svp].preco=isFinite(v)?v:0})}
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('button');if(!t)return;const ds=t.dataset;
+ const A=id=>AG.lista.find(x=>x.id===id);
+ if(ds.agdia){AG.dia=ds.agdia;render();return}
+ if(ds.agnovo){abrirHorario(null);return}
+ if(ds.agedit){abrirHorario(ds.agedit);return}
+ if(ds.agsv){guardaHorario();const v=servicos().find(x=>x.id===ds.agsv);AG.sh.servico=v.nome;if(v.preco)AG.sh.valor=String(v.preco).replace('.',',');renderHorario();return}
+ if(ds.agsalva){salvarHorario();return}
+ if(ds.agrec){abrirRecebi(ds.agrec);return}
+ if(ds.agforma){AG.sh.valor=$('#recval').value;AG.sh.forma=ds.agforma;renderRecebi();return}
+ if(ds.agrecok){confirmarRecebi();return}
+ if(ds.agwa){const a=A(ds.agwa);window.open('https://wa.me/'+foneWa(a.fone)+'?text='+encodeURIComponent(msgConfirma(a)),'_blank','noopener');return}
+ if(ds.agvolta){const r=retornos().find(x=>x.cli===ds.agvolta);if(r)window.open('https://wa.me/'+foneWa(r.fone)+'?text='+encodeURIComponent(msgVolta(r)),'_blank','noopener');return}
+ if(ds.agfal){const a=A(ds.agfal);try{await API.updAgenda(S.user.uid,a.id,{status:'faltou'});a.status='faltou';render();toast(a.cli+' marcada como falta')}catch(err){toast(errMsg(err))}return}
+ if(ds.agvolt){const a=A(ds.agvolt);try{await API.updAgenda(S.user.uid,a.id,{status:'marcado'});a.status='marcado';fecharSheet();render()}catch(err){toast(errMsg(err))}return}
+ if(ds.agmais){abrirMais(ds.agmais);return}
+ if(ds.agdesf){const a=A(ds.agdesf);confirmar('Desfazer o recebimento de '+brl(a.valor)+' de '+a.cli+'?',async()=>{try{if(a.lancId){await API.delLanc(S.user.uid,a.lancId);S.lanc=S.lanc.filter(x=>String(x.id)!==String(a.lancId))}await API.updAgenda(S.user.uid,a.id,{status:'marcado',lancId:null,forma:null});Object.assign(a,{status:'marcado',lancId:null,forma:null});render();toast('Recebimento desfeito')}catch(err){toast(errMsg(err))}},'Desfazer');return}
+ if(ds.agapaga){const a=A(ds.agapaga);confirmar('Apagar o horário de '+a.cli+'?'+(a.status==='feito'?' O recebimento continua no caixa.':''),async()=>{try{await API.delAgenda(S.user.uid,a.id);AG.lista=AG.lista.filter(x=>x!==a);render();toast('Horário apagado')}catch(err){toast(errMsg(err))}});return}
+ if(ds.agserv){abrirServicos();return}
+ if(ds.svadd){guardaServicos();AG.sh.serv.push({id:uidL(),nome:'',preco:0});renderServicos();setTimeout(()=>{const x=document.querySelectorAll('[data-svn]');x[x.length-1]?.focus()},30);return}
+ if(ds.svdel){guardaServicos();AG.sh.serv.splice(+ds.svdel,1);renderServicos();return}
+ if(ds.svsalva){guardaServicos();const sv=AG.sh.serv.filter(s=>s.nome.trim()).map(s=>({id:s.id||uidL(),nome:s.nome.trim().slice(0,60),preco:+s.preco||0}));const rd=Math.min(180,Math.max(7,parseInt($('#agret').value)||30));
+  try{await API.saveEmp(S.user.uid,{servicos:sv,retornoDias:rd});S.emp.servicos=sv;S.emp.retornoDias=rd;fecharSheet();AG.sh=null;render();toast('Serviços salvos')}catch(err){toast(errMsg(err))}return}
+});
+
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
- const h=location.hash.slice(1);S.tab=['inicio','extrato','relatorio','ajuda'].includes(h)?h:'inicio';
- $('#app').innerHTML=({inicio:vInicio,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ const h=location.hash.slice(1);S.tab=['inicio','agenda','extrato','relatorio','ajuda'].includes(h)?h:'inicio';
+ $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
 async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
@@ -532,7 +683,7 @@ async function iniciar(u){
  $('#app').innerHTML='<div class="center"><p class="mut">Carregando…</p></div>';
  try{
   if(S.isAdmin){await carregarAdmin()}
-  else{S.emp=await API.getEmp(u.uid);if(S.emp)S.lanc=await API.listLanc(u.uid,S.ano)}
+  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await carregarAgenda()}}
   render()}
  catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div><button class="w" style="margin-top:12px" id="sair">Voltar</button></div></div>`}
 }
