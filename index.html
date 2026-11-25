@@ -190,6 +190,8 @@ table.adm tr.sel td{background:var(--goldsoft)}table.adm td button{white-space:n
 .sw{appearance:none;width:52px!important;min-height:30px!important;height:30px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;padding:0!important;border:0!important;transition:background .15s}
 .sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px #0003}.sw:checked{background:var(--in)}.sw:checked::after{transform:translateX(22px)}
 .ge-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.ge-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media(max-width:760px){.ge-2{grid-template-columns:1fr}}
+.modofx{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:8px 14px;font-size:14px;background:#fdf1de;color:#5a3a00;border-bottom:2px solid var(--gold);position:relative;z-index:31}
+.modofx.ver{background:#e6ecfb;color:#1d2f63;border-color:#3d5ba9}.modofx button{min-height:36px;font-size:14px;background:var(--navy);color:#fff;border:0}
 #printarea{display:none}
 .danfe4{position:relative;font:7.5pt/1.25 Arial,sans-serif;color:#000}.danfe4 table{width:100%;border-collapse:collapse;margin-top:-1px}.danfe4 td,.danfe4 th{border:1px solid #000;padding:1px 3px;vertical-align:top}
 .danfe4 .rt{font-size:5.5pt;text-transform:uppercase}.danfe4 .vl{font-size:8pt;min-height:10px}.danfe4 .tit{font-weight:700;font-size:7pt;margin-top:4px}.danfe4 .corte{border-top:1px dashed #000;margin:6px 0}
@@ -679,7 +681,7 @@ async function carregarAdmin(){
  const ano=new Date().getFullYear(),mesAt=hoje().slice(0,7);
  for(const e of emps){const L=await API.listLanc(e.uid,ano);e._fat=L.filter(isFat).reduce((s,l)=>s+l.valor,0);e._mes=L.filter(l=>l.data.startsWith(mesAt)&&isFat(l)).reduce((s,l)=>s+l.valor,0);
   e._ult=L.reduce((m,l)=>l.data>m?l.data:m,'');e._lim=limiteAno(e,ano).valor;e._pc=e._fat/e._lim*100;e._das=dasInfo(L).st}
- S.admin.emps=emps;S.admin.conv=conv}
+ const eu=(S.realUser||S.user||{});S.admin.emps=emps.filter(e=>e.uid!==eu.uid);S.admin.conv=conv.filter(c=>c.email!==(eu.email||'').toLowerCase())}
 function msgConvite(c){
  const url=location.href.split('#')[0];
  return `Olá, ${c.nome||''}! Liberamos seu acesso ao *JM Gestão+*, o app da JM Gestão Contábil para organizar o financeiro do seu negócio.\n\n1. Abra: ${url}\n2. Toque em *Primeiro acesso*\n3. Use este e-mail: ${c.email}\n4. Crie uma senha\n\nSão 4 perguntas rápidas e pronto. Qualquer dúvida, é só chamar aqui.`}
@@ -1866,7 +1868,7 @@ function vAdmin(){const A=S.admin,ano=new Date().getFullYear(),E=A.emps,q=chaveN
  const pend=A.conv.filter(c=>!E.some(e=>(e.email||'').toLowerCase()===c.email));
  const F={todos:()=>true,ativos:e=>!e.bloqueado,bloqueados:e=>e.bloqueado,atrasados:e=>!e.bloqueado&&stPlano(e).st==='late',loja:e=>e.lojaPDV,limite:e=>e.mei!==false&&e._pc>=80};
  const L=E.filter(F[GE.filtro]||F.todos).filter(e=>!q||chaveNome((e.nome||'')+' '+(e.razao||'')+' '+(e.email||'')+' '+soDig(e.cnpj)).includes(q)||soDig(e.cnpj).includes(soDig(GE.busca)||'#'));
- return `<header class="top wide-top"><div class="in"><div><div class="brand">JM Gestão<b>+</b> · Escritório</div><small>Painel de gestão dos clientes</small></div><button id="sair">Sair</button></div></header>
+ return `<header class="top wide-top"><div class="in"><div><div class="brand">JM Gestão<b>+</b> · Escritório</div><small>Painel de gestão dos clientes</small></div><div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><button id="geteste" title="Uma loja sua para testar tudo">Loja de teste</button><a href="?demo" target="_blank" rel="noopener" class="hbtn" style="padding:0 12px">Demonstração</a><button id="sair">Sair</button></div></div></header>
  <main class="wrap wide ge">
  <div class="kp" style="margin-top:14px">
   <button class="card kpb" data-gef="ativos"><div class="mut">Clientes ativos</div><div class="big">${ativos.length}</div><small class="mut">${E.length} no total${pend.length?' · '+pend.length+' convite(s) sem acesso':''}</small></button>
@@ -1893,7 +1895,7 @@ function vAdmin(){const A=S.admin,ano=new Date().getFullYear(),E=A.emps,q=chaveN
 function vAdminDet(){const e=S.admin.emps.find(x=>x.uid===S.admin.sel);if(!e)return '';const ab=GE.aba;
  const abas=[['resumo','Resumo'],['modulos','Módulos'],['empresa','Empresa'],['acesso','Acesso e plano'],['lanc','Lançamentos']];
  return `<section class="card ficha" id="det"><div class="ge-hd"><div><h2>${esc(e.nome||'(sem nome)')}</h2><div class="mut">${esc(e.email||'')}${e.cnpj?' · CNPJ '+esc(fmtCNPJ(e.cnpj)):''}</div></div>
-  <div style="display:flex;gap:8px;align-items:center">${e.bloqueado?'<span class="pill p-out">Bloqueado</span>':'<span class="pill p-in">Ativo</span>'}<button id="fechadet" style="min-height:40px">Fechar</button></div></div>
+  <div style="display:flex;gap:8px;align-items:center">${e.bloqueado?'<span class="pill p-out">Bloqueado</span>':'<span class="pill p-in">Ativo</span>'}<button data-vercomo="${esc(e.uid)}" style="min-height:40px">Ver como o cliente</button><button id="fechadet" style="min-height:40px">Fechar</button></div></div>
   <div class="tabs-f" role="tablist">${abas.map(([k,t])=>`<button role="tab" aria-selected="${ab===k}" class="${ab===k?'on':''}" data-geaba="${k}">${t}</button>`).join('')}</div>
   <div class="ficha-c">${({resumo:fichaResumo,modulos:fichaModulos,empresa:fichaEmpresa,acesso:fichaAcesso,lanc:fichaLanc})[ab](e)}</div></section>`}
 const navMes=()=>`<div class="mnav" style="margin:4px 0 12px"><button data-ames="-1" aria-label="Mês anterior">‹</button><h3 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h3><button data-ames="1" aria-label="Próximo mês">›</button></div>`;
@@ -1969,9 +1971,39 @@ function telaBloqueado(){const m=S.emp.bloqMotivo||'Fale com o escritório.';
  <a class="pri" href="mailto:contato@jmgestaocontabil.com.br" style="display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:12px;text-decoration:none;font-weight:700">contato@jmgestaocontabil.com.br</a>
  <button class="w" id="sair" style="margin-top:12px">Sair</button></div></div>`}
 
+/* ---------- Escritório: loja de teste e "ver como o cliente" ---------- */
+const ESCRITA=/^(add|upd|del|save)/;let API_ORIG=null;
+function travarEscrita(on){if(on){API_ORIG=API_ORIG||{};for(const k of Object.keys(API))if(ESCRITA.test(k)&&typeof API[k]==='function'){API_ORIG[k]=API_ORIG[k]||API[k];API[k]=async()=>{throw new Error('Modo visualização: só o cliente pode alterar os dados dele.')}}}
+ else if(API_ORIG){for(const k of Object.keys(API_ORIG))API[k]=API_ORIG[k]}}
+async function zerarCliente(){S.lanc=[];LJ.prods=[];LJ.vendas=[];LJ.ok=false;LJ.cart=[];LJ.pg=null;NT.lista=[];NT.ed=null;AG.lista=[];CR.lista=[];OS.lista=[];PN.menu=PN.acoes=false;PN.busca=null;NFX.teste=null}
+async function entrarComo(uid,modo){const real=S.realUser||S.user;$('#app').innerHTML='<div class="center"><p class="mut">Abrindo…</p></div>';
+ try{S.realUser=real;S.modo=modo;S.adminVolta={sel:S.admin.sel,aba:GE.aba};
+  if(modo==='teste'){const em=(real.email||'').toLowerCase();if(!S.admin.conv.some(c=>c.email===em))await API.addConv(em,'Loja de teste do escritório');
+   if(!await API.getEmp(real.uid))await API.saveEmp(real.uid,{nome:'Loja de teste',razao:'JM GESTAO CONTABIL E PERICIAS LTDA',cnpj:'64211255000186',cidade:'Ivinhema',uf:'MS',tipo:'comercio',ramo:'loja',mei:false,lojaPDV:true,mods:{fiscal:true,cred:true},criadoEm:hoje(),teste:true})}
+  else travarEscrita(true);
+  S.user={...real,uid};S.isAdmin=false;zerarCliente();S.emp=await API.getEmp(uid);
+  if(!S.emp)throw new Error('Esse cliente ainda não terminou o cadastro.');
+  S.lanc=await API.listLanc(uid,S.ano);await Promise.all([carregarAgenda(),carregarCred(),carregarOS(),carregarLoja()]);
+  location.hash='inicio';render();scrollTo(0,0)}
+ catch(x){toast(errMsg(x));sairModo()}}
+async function sairModo(){travarEscrita(false);zerarCliente();if(S.realUser)S.user=S.realUser;S.realUser=null;S.modo=null;S.emp=null;S.isAdmin=true;fecharSheet();
+ history.replaceState(null,'',location.pathname+location.search);$('#app').innerHTML='<div class="center"><p class="mut">Voltando ao painel…</p></div>';
+ try{await carregarAdmin();const v=S.adminVolta||{};S.admin.sel=v.sel||null;GE.aba=v.aba||'resumo';if(S.admin.sel){S.admin.lanc=await API.listLanc(S.admin.sel,S.ano);carregarDet(S.admin.sel)}}catch(x){toast(errMsg(x))}
+ render()}
+function faixaModo(){if(!S.modo||!$('#app'))return;$('#modofx')?.remove();
+ const t=S.modo==='teste'?'<b>Loja de teste do escritório.</b> Pode vender, cadastrar e emitir nota em homologação à vontade: nada aqui é de cliente.'
+  :`<b>Vendo como ${esc(S.emp?S.emp.nome:'o cliente')}.</b> Só leitura: o que você tentar salvar não é gravado.`;
+ document.body.insertAdjacentHTML('afterbegin',`<div id="modofx" class="modofx ${S.modo}"><span>${t}</span><button id="modosair">Voltar ao painel</button></div>`)}
+document.addEventListener('click',ev=>{const t=ev.target.closest('button,a');if(!t)return;
+ if(t.id==='modosair'||(t.id==='sair'&&S.modo)){ev.preventDefault();ev.stopImmediatePropagation();sairModo();return}
+ if(!S.isAdmin)return;const ds=t.dataset;
+ if(t.id==='geteste'){entrarComo((S.realUser||S.user).uid,'teste');return}
+ if(ds.vercomo){entrarComo(ds.vercomo,'ver');return}},true);
+
 if(typeof DEMO!=='undefined'&&DEMO)window.__jm={get S(){return S},get LJ(){return LJ},get NT(){return NT}};
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
+ if(S.modo)faixaModo();else document.getElementById('modofx')?.remove();
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
