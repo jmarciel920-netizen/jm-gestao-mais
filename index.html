@@ -120,10 +120,16 @@ table.adm td{padding:10px 8px;border-bottom:1px solid var(--line)}
 .grade{display:grid;gap:6px;align-items:center;text-align:center}.grade button{min-height:52px;padding:0;font-size:17px}.grade button.zero{opacity:.55}
 table.vt{width:100%;border-collapse:collapse;font-size:14px}table.vt th{text-align:left;color:var(--mut);font-size:13px;padding:6px 4px}table.vt td{padding:4px}
 .cupom-tela{background:#fffdf7;color:#111;border-radius:8px;padding:14px;font:13px/1.45 "Courier New",monospace;max-width:340px;margin:0 auto}
-.cupom hr{border:0;border-top:1px dashed #888;margin:6px 0}.cupom .r{display:flex;justify-content:space-between;gap:8px}
+.danfe .qr svg{width:100%;height:auto;display:block}.cupom hr{border:0;border-top:1px dashed #888;margin:6px 0}.cupom .r{display:flex;justify-content:space-between;gap:8px}
 #printarea{display:none}
+.danfe4{position:relative;font:7.5pt/1.25 Arial,sans-serif;color:#000}.danfe4 table{width:100%;border-collapse:collapse;margin-top:-1px}.danfe4 td,.danfe4 th{border:1px solid #000;padding:1px 3px;vertical-align:top}
+.danfe4 .rt{font-size:5.5pt;text-transform:uppercase}.danfe4 .vl{font-size:8pt;min-height:10px}.danfe4 .tit{font-weight:700;font-size:7pt;margin-top:4px}.danfe4 .corte{border-top:1px dashed #000;margin:6px 0}
+.danfe4 .itens th{font-size:5.5pt;font-weight:400}.danfe4 .itens td{font-size:7pt;border-top:0;border-bottom:0}.danfe4 .itens .n{text-align:right}.danfe4 svg rect{fill:#000}
+.danfe4 .marca{position:absolute;top:45%;left:0;right:0;text-align:center;font-size:44pt;color:#0002;transform:rotate(-25deg);pointer-events:none}
 @media print{body>*:not(#printarea){display:none!important}#printarea{display:block;color:#000}
  #printarea.p-cupom{width:72mm;font:11px/1.35 "Courier New",monospace}
+ #printarea .danfe .qr svg{width:100%;height:auto}
+ #printarea.p-a4{width:190mm}
  .etqs{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}.etq{border:1px dashed #999;padding:2mm;break-inside:avoid;font:9px/1.2 Arial,sans-serif}.etq .en{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.etq .ep{font-size:12px;font-weight:700;text-align:right}}
 .wrap:has(.pdv),.wrap:has(.prodlist){max-width:1180px}
 .pdvbar{display:none}
@@ -319,6 +325,9 @@ const API={
  async listVendas(uid,de){if(DEMO)return demoStore.get('vd_'+uid,[]).filter(v=>v.data>=de);const q=await db.collection('empresas').doc(uid).collection('vendas').where('data','>=',de).get();return q.docs.map(d=>({id:d.id,...d.data()}))},
  async addVenda(uid,v){if(DEMO){const L=demoStore.get('vd_'+uid,[]);const n={...v,id:'v'+Date.now()};L.push(n);demoStore.set('vd_'+uid,L);return n}
   const r=await db.collection('empresas').doc(uid).collection('vendas').add({...v,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...v,id:r.id}},
+ async listNotas(uid,de){if(DEMO)return demoStore.get('nt_'+uid,[]).filter(v=>v.data>=de);const q=await db.collection('empresas').doc(uid).collection('notas').where('data','>=',de).get();return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async saveNota(uid,n){const {id,...d}=n;const limpo=JSON.parse(JSON.stringify(d));if(DEMO){const L=demoStore.get('nt_'+uid,[]);if(id){demoStore.set('nt_'+uid,L.map(x=>x.id===id?{...limpo,id}:x));return {...limpo,id}}const x={...limpo,id:'nt'+Date.now()};L.push(x);demoStore.set('nt_'+uid,L);return x}
+  const col=db.collection('empresas').doc(uid).collection('notas');if(id){await col.doc(id).set(limpo);return {...limpo,id}}const r=await col.add(limpo);return {...limpo,id:r.id}},
  async updVenda(uid,id,v){if(DEMO){demoStore.set('vd_'+uid,demoStore.get('vd_'+uid,[]).map(x=>x.id===id?{...x,...v}:x));return}await db.collection('empresas').doc(uid).collection('vendas').doc(id).update(v)},
  async listEmps(){
   if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
@@ -628,6 +637,7 @@ function vAdminDet(){
  const L=S.admin.lanc,LM=doMes(L,S.ano,S.mes),r=relatorioDados(LM);
  return `<div class="card" id="det"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>${esc(e.nome)}</h2><button id="fechadet" style="min-height:40px">Fechar</button></div>
   <div class="mnav" style="margin-top:10px"><button data-ames="-1" aria-label="Mês anterior">‹</button><h3 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h3><button data-ames="1" aria-label="Próximo mês">›</button></div>
+  ${e.lojaPDV?`<button data-admxml="1" style="margin-top:10px">Baixar XMLs de ${MESES[S.mes-1]} (NFC-e, NF-e e cartas de correção)</button>`:''}
   <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><span class="pill p-in">Entrou ${brl(soma(LM,'in'))}</span><span class="pill p-out">Saiu ${brl(soma(LM,'out'))}</span>
    <span class="pill p-g">Comércio ${brl(r.comercio[0]+r.comercio[1])}</span><span class="pill p-g">Indústria ${brl(r.industria[0]+r.industria[1])}</span><span class="pill p-g">Serviços ${brl(r.servico[0]+r.servico[1])}</span><span class="pill p-w">Sem nota ${brl(r.comercio[0]+r.industria[0]+r.servico[0])}</span></div>
   ${LM.length?LM.sort((a,b)=>b.data.localeCompare(a.data)).map(l=>itemLanc(l,false)).join(''):'<p class="mut">Sem lançamentos neste mês.</p>'}</div>`}
@@ -1067,7 +1077,7 @@ function eanSVG(c){if(!/^\d{13}$/.test(c||''))return '';const d=[...c].map(Numbe
  return `<svg viewBox="0 0 109 54" width="100%" xmlns="http://www.w3.org/2000/svg" fill="#000">${r}<text x="2" y="53" font-size="8" font-family="monospace">${c[0]}</text><text x="15" y="53" font-size="8" font-family="monospace" textLength="38">${c.slice(1,7)}</text><text x="61" y="53" font-size="8" font-family="monospace" textLength="38">${c.slice(7)}</text></svg>`}
 function imprimir(html,tipo){let a=$('#printarea');if(!a){a=document.createElement('div');a.id='printarea';document.body.appendChild(a)}a.className=tipo;a.innerHTML=html;
  try{window.print()}catch(e){toast('Impressão indisponível aqui')}}
-async function carregarLoja(){if(!S.user||S.isAdmin||!usaLoja())return;try{const [p,v]=await Promise.all([API.listProd(S.user.uid),API.listVendas(S.user.uid,addDia(hoje(),-90))]);LJ.prods=p;LJ.vendas=v;LJ.ok=true}catch(e){LJ.ok=false}}
+async function carregarLoja(){if(!S.user||S.isAdmin||!usaLoja())return;try{const [p,v]=await Promise.all([API.listProd(S.user.uid),API.listVendas(S.user.uid,addDia(hoje(),-90))]);LJ.prods=p;LJ.vendas=v;LJ.ok=true}catch(e){LJ.ok=false}carregarNotas()}
 const vendasDia=d=>LJ.vendas.filter(v=>v.data===d&&!v.cancelada);
 const totCart=()=>{const sub=LJ.cart.reduce((s,i)=>s+i.qtd*i.preco,0);const dtx=String(LJ.desc||'').trim();let d=0;if(dtx.endsWith('%'))d=sub*(parseValor(dtx.slice(0,-1))||0)/100;else d=parseValor(dtx)||0;d=Math.min(Math.max(0,Math.round(d*100)/100),sub);return{sub,desc:d,tot:Math.round((sub-d)*100)/100}};
 
@@ -1080,7 +1090,7 @@ function blocoLojaInicio(){if(!usaLoja())return'';const V=vendasDia(hoje()),t=V.
   ${baixo.length?`<a href="#produtos" class="card" style="display:block;text-decoration:none;color:inherit"><b>Estoque acabando</b><div class="mut">${baixo.map(({p,v})=>esc(p.nome+(descVar(v)?' '+descVar(v):''))+': '+(+v.est||0)).join(' · ')}</div></a>`:''}`}
 function itemVenda(v){const nf=v.nfce||{};return `<button class="li" data-vver="${esc(v.id)}" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:10px 0;min-height:0;font-weight:400">
  <div><b>Nº ${v.num}</b> · ${esc(v.hora||'')} ${v.cli?'· '+esc(v.cli):''}<div class="d">${esc(v.itens.map(i=>i.qtd+'× '+i.nome).join(', ')).slice(0,90)} · ${esc(v.pags.map(p=>p.forma).join(' + '))}</div></div>
- <div style="text-align:right"><div class="v ${v.cancelada?'':'in'}" style="${v.cancelada?'text-decoration:line-through;color:var(--mut)':''}">${brl(v.total)}</div>${v.cancelada?'<span class="pill p-out">cancelada</span>':nf.st==='autorizada'?'<span class="pill p-in">NFC-e</span>':'<span class="pill p-w">sem nota</span>'}</div></button>`}
+ <div style="text-align:right"><div class="v ${v.cancelada?'':'in'}" style="${v.cancelada?'text-decoration:line-through;color:var(--mut)':''}">${brl(v.total)}</div>${v.cancelada?'<span class="pill p-out">cancelada</span>':nf.st==='autorizada'?'<span class="pill p-in">NFC-e '+nf.nNF+'</span>':nf.st==='nfe'?'<span class="pill p-in">NF-e '+nf.nNF+'</span>':nf.st==='rejeitada'?'<span class="pill p-out">nota recusada</span>':'<span class="pill p-w">sem nota</span>'}</div></button>`}
 
 /* ---------- PDV ---------- */
 function buscaProd(q){const k=chaveNome(q),dg=soDig(q);const A=LJ.prods.filter(p=>p.ativo!==false);if(!k)return A.slice(0,30);
@@ -1115,26 +1125,28 @@ async function abrirCamera(){if(!('BarcodeDetector' in window))return;let st;try
 function pararCamera(){if(LJ.cam){LJ.cam.getTracks().forEach(t=>t.stop());LJ.cam=null}}
 
 /* ---------- Pagamento ---------- */
-function abrirPagamento(){const T=totCart();LJ.pg={pags:[{forma:'Dinheiro',valor:T.tot}],rec:'',n:'1',venc:addDia(hoje(),30),cli:LJ.cli,fone:LJ.fone};renderPag()}
+function abrirPagamento(){const T=totCart();LJ.pg={pags:[{forma:'Dinheiro',valor:T.tot}],rec:'',cpf:'',n:'1',venc:addDia(hoje(),30),cli:LJ.cli,fone:LJ.fone};renderPag()}
 function renderPag(){const g=LJ.pg,T=totCart(),soma=g.pags.reduce((s,p)=>s+(+p.valor||0),0),din=g.pags.find(p=>p.forma==='Dinheiro'),cr=g.pags.find(p=>p.forma==='Crediário');
  const troco=din&&g.rec?Math.max(0,parseValor(g.rec)-din.valor):0,falta=Math.round((T.tot-soma)*100)/100;
  sheetOS(`<div class="hd"><h2>Receber ${brl(T.tot)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
   ${g.pags.map((p,ix)=>`<div class="grp" style="margin-top:${ix?14:0}px"><div class="t">${g.pags.length>1?(ix+1)+'ª forma':'Forma de pagamento'}</div><div class="chips">${FORMAS_PDV.map(f=>`<button class="chip ${p.forma===f?'on':''}" data-pgf="${ix}|${f}">${f}</button>`).join('')}</div>
    ${g.pags.length>1?`<div style="display:flex;gap:8px;align-items:end;margin-top:8px"><label style="flex:1">Valor<input data-pgv="${ix}" inputmode="decimal" value="${String(p.valor).replace('.',',')}"></label><button class="x" data-pgdel="${ix}" aria-label="Remover forma" style="height:50px;width:50px">×</button></div>`:''}</div>`).join('')}
   ${g.pags.length<3?'<button class="lnk" id="pgmais" style="margin-top:8px">+ Dividir em outra forma</button>':''}
-  ${din?`<label style="margin-top:12px">Valor recebido em dinheiro (para calcular o troco)<input id="pgrec" inputmode="decimal" value="${esc(g.rec)}" placeholder="${brl(din.valor)}"></label>${troco>0?`<div class="ok" style="margin-top:8px;font-size:18px">Troco: <b>${brl(troco)}</b></div>`:''}`:''}
+  ${din?`<label style="margin-top:12px">Valor recebido em dinheiro (para calcular o troco)<input id="pgrec" inputmode="decimal" value="${esc(g.rec)}" placeholder="${brl(din.valor)}"></label><div id="pgtroco">${troco>0?`<div class="ok" style="margin-top:8px;font-size:18px">Troco: <b>${brl(troco)}</b></div>`:''}</div>`:''}
   <div class="grp"><div class="t">Cliente ${cr?'(obrigatório no crediário)':'(opcional)'}</div><div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px"><input id="pgcli" list="pgclis" value="${esc(g.cli)}" placeholder="Nome" autocomplete="off"><input id="pgfone" type="tel" inputmode="tel" value="${esc(g.fone)}" placeholder="WhatsApp"></div><datalist id="pgclis">${todosClientes().map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist></div>
+  ${nfOn()?`<label style="margin-top:12px">CPF na nota (opcional)<input id="pgcpf" inputmode="numeric" value="${esc(g.cpf||'')}" placeholder="Só se a cliente pedir"></label>`:''}
   ${cr?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><label>Parcelas<select id="pgn">${[1,2,3,4,5,6,8,10].map(k=>`<option ${String(k)===g.n?'selected':''}>${k}</option>`).join('')}</select></label><label>1º vencimento<input id="pgvenc" type="date" value="${esc(g.venc)}"></label></div><div class="ok" style="margin-top:8px">${g.n}× de ${brl(cr.valor/(+g.n||1))} no crediário</div>`:''}
   ${Math.abs(falta)>=0.01?`<div class="err" style="margin-top:12px">${falta>0?'Falta distribuir '+brl(falta):'As formas passam do total em '+brl(-falta)}</div>`:''}
   <div id="pgerr"></div>
   <button class="pri w" id="pgok" style="min-height:58px;font-size:19px;margin-top:14px">Concluir venda</button>`);
  const c=$('#pgcli');c.oninput=()=>{const x=todosClientes().find(y=>y._k===chaveNome(c.value));if(x&&x.fone&&!$('#pgfone').value)$('#pgfone').value=fmtFone(x.fone)}}
-function guardaPag(){const g=LJ.pg;if(!g||!$('#pgcli'))return;g.cli=$('#pgcli').value;g.fone=$('#pgfone').value;if($('#pgrec'))g.rec=$('#pgrec').value;if($('#pgn'))g.n=$('#pgn').value;if($('#pgvenc'))g.venc=$('#pgvenc').value;
+function guardaPag(){const g=LJ.pg;if(!g||!$('#pgcli'))return;g.cli=$('#pgcli').value;g.fone=$('#pgfone').value;if($('#pgcpf'))g.cpf=$('#pgcpf').value;if($('#pgrec'))g.rec=$('#pgrec').value;if($('#pgn'))g.n=$('#pgn').value;if($('#pgvenc'))g.venc=$('#pgvenc').value;
  document.querySelectorAll('[data-pgv]').forEach(i=>{const v=parseValor(i.value);g.pags[+i.dataset.pgv].valor=isFinite(v)?v:0})}
 async function concluirVenda(){guardaPag();const g=LJ.pg,T=totCart(),e=m=>{$('#pgerr').innerHTML=`<div class="err" style="margin-top:12px">${m}</div>`};
  const soma=Math.round(g.pags.reduce((s,p)=>s+(+p.valor||0),0)*100)/100;if(Math.abs(soma-T.tot)>=0.01)return e('A soma das formas precisa dar '+brl(T.tot)+'.');
  if(g.pags.some(p=>!(p.valor>0)))return e('Cada forma precisa ter um valor.');
  const cr=g.pags.find(p=>p.forma==='Crediário');if(cr&&(!g.cli.trim()||soDig(g.fone).length<10))return e('No crediário, coloque o nome e o WhatsApp da cliente.');
+ if(g.cpf&&soDig(g.cpf)&&!cpfOk(g.cpf))return e('Esse CPF não confere. Confira os números ou deixe em branco.');
  const b=$('#pgok');b.disabled=true;b.textContent='Salvando…';
  try{
   const num=(+S.emp.seqVenda||0)+1,agora=new Date(),hora=pad(agora.getHours())+':'+pad(agora.getMinutes());await API.saveEmp(S.user.uid,{seqVenda:num});S.emp.seqVenda=num;
@@ -1143,11 +1155,11 @@ async function concluirVenda(){guardaPag();const g=LJ.pg,T=totCart(),e=m=>{$('#p
    const parcelas=[...Array(n)].map((_,i)=>({n:i+1,venc:addMes(g.venc,i),valor:(base+(i===n-1?resto-base*n:0))/100,pago:false}));
    const c=await API.addCred(S.user.uid,{cli:g.cli.trim().slice(0,60),fone:soDig(g.fone).slice(0,13),desc:('Venda nº '+num+': '+LJ.cart.map(i=>i.qtd+' '+i.nome).join(', ')).slice(0,60),total:cr.valor,valor:cr.valor,entrada:0,data:hoje(),parcelas,venda:num});CR.lista.push(c);credId=c.id}
   const venda={num,data:hoje(),hora,itens:LJ.cart.map(({k,...i})=>i),sub:T.sub,desconto:T.desc,total:T.tot,pags:g.pags.map(p=>({forma:p.forma,valor:p.valor})),troco:g.rec?Math.max(0,parseValor(g.rec)-((g.pags.find(p=>p.forma==='Dinheiro')||{}).valor||0)):0,
-   cli:g.cli.trim().slice(0,60),fone:soDig(g.fone).slice(0,13),canal:'loja',lancs,credId,nfce:{st:'pendente'}};
+   cli:g.cli.trim().slice(0,60),fone:soDig(g.fone).slice(0,13),cpf:soDig(g.cpf||'').slice(0,11),canal:'loja',lancs,credId,nfce:{st:'pendente'}};
   const v=await API.addVenda(S.user.uid,venda);LJ.vendas.push(v);
   await mexerEstoque(venda.itens,-1);
   if(venda.cli&&!todosClientes().some(c=>c._k===chaveNome(venda.cli))){try{await salvarCadCli([...cadCli(),{nome:venda.cli,fone:venda.fone}])}catch(x){}}
-  LJ.cart=[];LJ.desc='';LJ.q='';LJ.pg=null;render();mostrarVenda(v.id,true);
+  LJ.cart=[];LJ.desc='';LJ.q='';LJ.pg=null;render();mostrarVenda(v.id,true);if(nfOn()&&S.emp.nfceAuto!==false)emitirNFCe(v.id,true);
  }catch(err){b.disabled=false;b.textContent='Concluir venda';e(esc(errMsg(err)))}}
 async function mexerEstoque(itens,sinal){const porProd={};for(const i of itens)(porProd[i.pid]=porProd[i.pid]||[]).push(i);
  for(const [pid,its] of Object.entries(porProd)){const p=LJ.prods.find(x=>x.id===pid);if(!p)continue;
@@ -1158,20 +1170,24 @@ function cupomHTML(v){const e=S.emp;return `<div class="cupom"><b style="font-si
  ${v.desconto?`<div class="r"><span>Subtotal</span><span>${brl(v.sub)}</span></div><div class="r"><span>Desconto</span><span>-${brl(v.desconto)}</span></div>`:''}
  <div class="r" style="font-size:15px"><b>TOTAL</b><b>${brl(v.total)}</b></div>${v.pags.map(p=>`<div class="r"><span>${esc(p.forma)}</span><span>${brl(p.valor)}</span></div>`).join('')}${v.troco?`<div class="r"><span>Troco</span><span>${brl(v.troco)}</span></div>`:''}
  ${v.cli?'<hr>Cliente: '+esc(v.cli):''}<hr><div style="text-align:center">${v.nfce&&v.nfce.st==='autorizada'?'NFC-e autorizada':'Este comprovante não é documento fiscal'}<br>Obrigado pela preferência!</div></div>`}
-function mostrarVenda(id,nova){const v=LJ.vendas.find(x=>x.id===id);if(!v)return;
+function mostrarVenda(id,nova){const v=LJ.vendas.find(x=>x.id===id);if(!v)return;NFX.aberta={id,nova};const aut=v.nfce&&v.nfce.st==='autorizada';
  sheetOS(`<div class="hd"><h2>${nova?'Venda concluída':'Venda nº '+v.num}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
   ${nova&&v.troco?`<div class="ok" style="font-size:20px;text-align:center;margin-bottom:10px">Troco: <b>${brl(v.troco)}</b></div>`:''}
   <div class="cupom-tela">${cupomHTML(v)}</div>
-  ${v.cancelada?'<div class="err" style="margin-top:10px">Venda cancelada. O estoque e o caixa foram desfeitos.</div>':`<div class="pill p-w" style="margin-top:10px;white-space:normal">NFC-e: a emissão automática entra na próxima etapa. Por enquanto emita a nota onde já emite hoje.</div>`}
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button data-vimp="${esc(v.id)}">Imprimir</button>${v.fone?`<a class="pri" href="https://wa.me/${foneWa(v.fone)}?text=${encodeURIComponent(msgVenda(v))}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;border-radius:12px;font-weight:600">WhatsApp</a>`:'<span></span>'}</div>
+  ${v.cancelada?'<div class="err" style="margin-top:10px">Venda cancelada. O estoque e o caixa foram desfeitos.</div>':''}${blocoNF(v)}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button data-vimp="${esc(v.id)}">${aut?'Imprimir NFC-e':'Imprimir'}</button>${v.fone?`<a class="pri" href="https://wa.me/${foneWa(v.fone)}?text=${encodeURIComponent(msgVenda(v))}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;border-radius:12px;font-weight:600">WhatsApp</a>`:'<span></span>'}</div>
   ${nova?'<button class="pri w" id="vnova" style="min-height:56px;margin-top:10px">Nova venda</button>':(!v.cancelada?`<button class="w" data-vcanc="${esc(v.id)}" style="margin-top:10px;color:var(--out)">Cancelar venda</button>`:'')}`)}
 function msgVenda(v){return `Olá${v.cli?', '+v.cli.split(' ')[0]:''}! Obrigado pela compra na ${S.emp.nome} 😊\n${v.itens.map(i=>`• ${i.qtd}× ${i.nome}${i.var?' ('+i.var+')':''}: ${brl(i.qtd*i.preco)}`).join('\n')}\nTotal: ${brl(v.total)} (${v.pags.map(p=>p.forma).join(' + ')})`}
 async function cancelarVenda(id){const v=LJ.vendas.find(x=>x.id===id);if(!v)return;
  if(v.credId){const c=CR.lista.find(x=>x.id===v.credId);if(c&&(c.parcelas||[]).some(p=>p.pago)){toast('Essa venda tem parcela do crediário já recebida. Desfaça o recebimento no Crediário antes.');return}}
- confirmar('Cancelar a venda nº '+v.num+' de '+brl(v.total)+'?',async()=>{try{
+ if(v.nfce&&v.nfce.st==='autorizada'){pedirCancelNF(v);return}
+ if(v.nfce&&v.nfce.st==='nfe'){toast('Essa venda tem NF-e. Cancele primeiro a NF-e nº '+v.nfce.nNF+' em Mais › NF-e.');return}
+ if(NFX.busy[v.id]){toast('Espere a nota terminar de ser emitida.');return}
+ confirmar('Cancelar a venda nº '+v.num+' de '+brl(v.total)+'?',()=>desfazerVenda(v),'Cancelar venda')}
+async function desfazerVenda(v){try{
   for(const l of v.lancs||[]){await API.delLanc(S.user.uid,l);S.lanc=S.lanc.filter(x=>x.id!==l)}
   if(v.credId){await API.delCred(S.user.uid,v.credId);CR.lista=CR.lista.filter(x=>x.id!==v.credId)}
-  await mexerEstoque(v.itens,1);await API.updVenda(S.user.uid,v.id,{cancelada:true,canceladaEm:hoje()});v.cancelada=true;render();toast('Venda cancelada: estoque e caixa desfeitos')}catch(err){toast(errMsg(err))}},'Cancelar venda')}
+  await mexerEstoque(v.itens,1);await API.updVenda(S.user.uid,v.id,{cancelada:true,canceladaEm:hoje()});v.cancelada=true;render();toast('Venda cancelada: estoque e caixa desfeitos')}catch(err){toast(errMsg(err))}}
 
 /* ---------- Vendas (histórico) ---------- */
 function vVendas(){const L=[...LJ.vendas].sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));const dias={};L.forEach(v=>(dias[v.data]=dias[v.data]||[]).push(v));
@@ -1235,7 +1251,7 @@ function abrirEtiquetas(){const A=LJ.prods.filter(p=>p.ativo!==false);
 function etqDoProduto(p){return (p.vars||[]).flatMap(v=>Array(Math.max(1,Math.min(+v.est||0,50))).fill({p,v}))}
 
 /* ---------- Mais ---------- */
-function vMais(){const it=[['vendas','Vendas','Histórico, imprimir e cancelar vendas'],['extrato','Extrato','Tudo que entrou e saiu do caixa'],['relatorio','Relatório do mês','Resumo das receitas'],['ajuda','Ajuda e meus dados','Dúvidas, dados da empresa e configurações']];
+function vMais(){const it=[['vendas','Vendas','Histórico, imprimir e cancelar vendas'],['extrato','Extrato','Tudo que entrou e saiu do caixa'],['relatorio','Relatório do mês','Resumo das receitas'],['nfe','NF-e (nota modelo 55)','Venda para empresa, outro estado, devolução ao fornecedor e carta de correção'],['nfce','Nota fiscal (NFC-e)',nfOn()?(nfPendentes().length?nfPendentes().length+' venda(s) sem nota · emitir e baixar XML':'Ligada · pendentes e XML do mês'):'Emitir NFC-e direto na SEFAZ-MS'],['ajuda','Ajuda e meus dados','Dúvidas, dados da empresa e configurações']];
  return shell(`<h1>Mais</h1>${it.map(([h,t,d])=>`<a href="#${h}" class="card" style="display:block;text-decoration:none;color:inherit"><b>${t}</b><div class="mut">${d}</div></a>`).join('')}`)}
 
 /* ---------- eventos ---------- */
@@ -1252,7 +1268,12 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button,a')
  if(t.id==='pgok'){concluirVenda();return}
  if(t.id==='vnova'){fecharSheet();focoPDV();return}
  if(ds.vver){mostrarVenda(ds.vver);return}
- if(ds.vimp){const v=LJ.vendas.find(x=>x.id===ds.vimp);if(v)imprimir(cupomHTML(v),'p-cupom');return}
+ if(ds.vimp){const v=LJ.vendas.find(x=>x.id===ds.vimp);if(v)imprimir(v.nfce&&v.nfce.st==='autorizada'?danfeHTML(v):cupomHTML(v),'p-cupom');return}
+ if(ds.nfemit){emitirNFCe(ds.nfemit,false);if(S.tab==='nfce')render();return}
+ if(t.id==='nfcgo'){cancelarComNF(t.dataset.v);return}
+ if(t.id==='nftestar'){testarAgente();return}
+ if(t.id==='nftodas'){emitirTodas();return}
+ if(t.id==='nfxml'){baixarXMLs();return}
  if(ds.vcanc){fecharSheet();cancelarVenda(ds.vcanc);return}
  if(t.id==='pnovo'){abrirProduto(null);return}
  if(ds.pver){abrirProduto(ds.pver);return}
@@ -1265,22 +1286,386 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button,a')
 });
 document.addEventListener('input',e=>{const id=e.target.id;
  if(id==='pdvq'){LJ.q=e.target.value;const p=e.target.selectionStart;render();const i=$('#pdvq');if(i){i.focus();i.setSelectionRange(p,p)}}
+ if(id==='pgrec'&&LJ.pg){LJ.pg.rec=e.target.value;const din=LJ.pg.pags.find(p=>p.forma==='Dinheiro'),tr=din&&LJ.pg.rec?Math.max(0,parseValor(LJ.pg.rec)-din.valor):0,el=$('#pgtroco');if(el)el.innerHTML=tr>0?`<div class="ok" style="margin-top:8px;font-size:18px">Troco: <b>${brl(tr)}</b></div>`:'';return}
  if(id==='pbusca'){LJ.pq=e.target.value;const p=e.target.selectionStart;render();const i=$('#pbusca');if(i){i.focus();i.setSelectionRange(p,p)}}});
 document.addEventListener('change',e=>{const id=e.target.id;
  if(id==='pdvdesc'){LJ.desc=e.target.value;render();return}
+ if(['nfon','nfauto','nfimp','nfurl'].includes(id)){const k={nfon:'nfceOn',nfauto:'nfceAuto',nfimp:'nfceImp',nfurl:'nfceUrl'}[id],val=id==='nfurl'?e.target.value.trim():e.target.checked,up={[k]:val};
+  if(id==='nfon'&&val&&!S.emp.nfceDesde)up.nfceDesde=hoje();API.saveEmp(S.user.uid,up).then(()=>{Object.assign(S.emp,up);NFX.teste=null;render();if(id==='nfon')toast(val?'NFC-e ligada. Agora teste a conexão no computador do balcão.':'NFC-e desligada')}).catch(x=>toast(errMsg(x)));return}
  if(['prtams','prcores'].includes(id)){guardaProduto();renderProduto();return}
- if(e.target.dataset&&e.target.dataset.pgv!==undefined||['pgn','pgrec'].includes(id)){guardaPag();renderPag()}});
+ if(e.target.dataset&&e.target.dataset.pgv!==undefined||id==='pgn'){guardaPag();renderPag()}});
 document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const id=e.target.id;
  if(id==='pdvq'){e.preventDefault();e.stopPropagation();const q=e.target.value.trim();if(!q)return;if(lerCodigo(q))return;const R=buscaProd(q);if(R.length===1){LJ.q='';escolherVar(R[0])}else if(!R.length)toast('Nada encontrado para "'+q+'"');return}
  if(id==='pdvdesc'){e.preventDefault();LJ.desc=e.target.value;render()}},true);
 
+/* ---------- NFC-e (programa da nota no computador do balcão) ---------- */
+const NFX={busy:{},aberta:null,teste:null};
+const nfOn=()=>!!(S.emp&&S.emp.nfceOn);
+const nfUrl=()=>String(S.emp.nfceUrl||'http://127.0.0.1:8765').replace(/\/+$/,'');
+async function agente(path,body,ms=15000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+ try{const r=await fetch(nfUrl()+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:c.signal});
+  if(!r.ok)throw new Error('O programa da nota recusou o pedido ('+r.status+').');return await r.json()}
+ catch(x){if(x.name==='AbortError')throw new Error('O programa da nota demorou demais para responder.');if(x instanceof TypeError)throw new Error('Não encontrei o programa da nota. Use o computador do balcão e confira se a janela "Nota fiscal" está aberta.');throw x}
+ finally{clearTimeout(t)}}
+function cpfOk(c){c=soDig(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(const n of [9,10]){let s=0;for(let i=0;i<n;i++)s+=+c[i]*(n+1-i);if((s*10%11)%10!==+c[n])return false}return true}
+const fmtCPF=c=>soDig(c).replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+function vendaFiscal(v){return{num:v.num,desconto:v.desconto||0,pags:v.pags,troco:v.troco||0,cpf:v.cpf||'',cli:v.cli||'',
+ itens:v.itens.map(i=>{const p=LJ.prods.find(x=>x.id===i.pid)||{};return{pid:i.pid,cod:p.ref||'',nome:i.nome,var:i.var||'',qtd:i.qtd,preco:i.preco,ean:i.ean||'',ncm:soDig(p.ncm||i.ncm||''),cfop:p.cfop||'5102',csosn:p.csosn||'102',orig:p.orig||'0',un:p.un||'UN'}})}}
+function semNcmVenda(v){return v.itens.filter(i=>{const p=LJ.prods.find(x=>x.id===i.pid);return soDig((p&&p.ncm)||i.ncm||'').length!==8}).map(i=>i.nome)}
+async function emitirNFCe(id,auto){const v=LJ.vendas.find(x=>x.id===id);if(!v||v.cancelada||(v.nfce&&v.nfce.st==='autorizada')||NFX.busy[id])return;
+ const falta=semNcmVenda(v);let nf;
+ if(falta.length)nf={st:'pendente',msg:'Falta o NCM de: '+[...new Set(falta)].slice(0,3).join(', ')+'. Abra o produto em Produtos › Dados fiscais e depois emita de novo.'};
+ else{NFX.busy[id]=1;atualizaVendaAberta(id);
+  try{const r=await agente('/emitir',{id:v.id,venda:vendaFiscal(v)},90000);
+   if(r.st==='autorizada')nf={st:'autorizada',chave:r.chave||'',nProt:r.nProt||'',nNF:r.nNF||0,serie:r.serie||1,qr:r.qr||'',qrSvg:r.qr_svg||'',tpAmb:r.tpAmb||2,dh:r.dhRecbto||'',xml:r.xml||''};
+   else nf={st:r.st==='rejeitada'?'rejeitada':'pendente',cStat:r.cStat||'',msg:(r.cStat?r.cStat+' - ':'')+(r.xMotivo||'A nota não foi autorizada.'),nNF:r.nNF||0};
+  }catch(x){nf={st:'pendente',msg:errMsg(x)}}
+  delete NFX.busy[id]}
+ v.nfce=nf;try{await API.updVenda(S.user.uid,v.id,{nfce:nf})}catch(x){toast('A nota saiu, mas não consegui salvar no sistema: '+errMsg(x))}
+ atualizaVendaAberta(id);if(S.tab==='vendas'||S.tab==='nfce')render();
+ if(nf.st==='autorizada'){if(auto&&S.emp.nfceImp!==false)imprimir(danfeHTML(v),'p-cupom');if(!auto)toast('NFC-e nº '+nf.nNF+' autorizada')}
+ else if(!auto)toast('Nota não emitida: '+nf.msg.slice(0,140));
+ return nf}
+function atualizaVendaAberta(id){if(NFX.aberta&&NFX.aberta.id===id&&$('#sheet').classList.contains('on'))mostrarVenda(id,NFX.aberta.nova)}
+function blocoNF(v){const nf=v.nfce||{};
+ if(nf.st==='cancelada')return `<div class="pill p-g" style="margin-top:10px;white-space:normal">NFC-e nº ${nf.nNF} cancelada na SEFAZ${nf.canceladaEm?' em '+dBR(nf.canceladaEm):''}.</div>`;
+ if(nf.st==='nfe')return `<div class="ok" style="margin-top:10px">Esta venda saiu com a <b>NF-e nº ${nf.nNF}</b> (nota com dados do cliente).</div>`;
+ if(v.cancelada)return '';
+ if(nf.st==='autorizada')return `<div class="ok" style="margin-top:10px">NFC-e nº <b>${nf.nNF}</b> autorizada${+nf.tpAmb===2?' <b>(homologação, sem valor fiscal)</b>':''}<div class="mut" style="font-size:12px;word-break:break-all;margin-top:4px">Chave ${esc(fmtChave(nf.chave))}</div></div>`;
+ if(NFX.busy[v.id])return `<div class="pill p-w" style="margin-top:10px;white-space:normal;display:block;text-align:center;padding:12px">Emitindo a NFC-e na SEFAZ…</div>`;
+ if(!nfOn())return `<div class="pill p-w" style="margin-top:10px;white-space:normal">Sem nota fiscal. Para emitir NFC-e pelo sistema, ligue em Mais › Nota fiscal (NFC-e).</div>`;
+ return `<div class="${nf.st==='rejeitada'?'err':'pill p-w'}" style="margin-top:10px;white-space:normal;display:block">${nf.st==='rejeitada'?'<b>A SEFAZ recusou a nota.</b> ':'<b>NFC-e pendente.</b> '}${esc(nf.msg||'Ainda não emitida.')}</div>
+  <button class="pri w" data-nfemit="${esc(v.id)}" style="margin-top:8px">Emitir NFC-e agora</button><button class="lnk" data-vnfe="${esc(v.id)}" style="margin-top:6px">Cliente quer nota com CNPJ/endereço? Emitir NF-e</button>`}
+const fmtChave=c=>String(c||'').replace(/(\d{4})(?=\d)/g,'$1 ');
+function lerXML(xml){try{const d=new DOMParser().parseFromString(xml,'text/xml');if(d.querySelector('parsererror'))return null;
+ const g=(el,t)=>{const x=el&&el.getElementsByTagName(t)[0];return x?x.textContent:''};return{d,g}}catch(x){return null}}
+function danfeHTML(v){const nf=v.nfce||{},X=nf.xml?lerXML(nf.xml):null,e=S.emp;
+ let em={nome:e.razao||e.nome,cnpj:e.cnpj,ie:'',end:[e.cidade,e.uf].filter(Boolean).join('/')},itens=v.itens.map(i=>({cod:i.ean||'',nome:i.nome+(i.var?' '+i.var:''),qtd:i.qtd,un:'UN',vun:i.preco,vt:i.qtd*i.preco})),dhEmi='',dest=v.cpf?'CPF '+fmtCPF(v.cpf):'';
+ if(X){const{d,g}=X,emit=d.getElementsByTagName('emit')[0],en=d.getElementsByTagName('enderEmit')[0];
+  em={nome:g(emit,'xNome'),cnpj:g(emit,'CNPJ'),ie:g(emit,'IE'),end:[g(en,'xLgr')+', '+g(en,'nro'),g(en,'xBairro'),g(en,'xMun')+'/'+g(en,'UF')].join(' - ')};
+  itens=[...d.getElementsByTagName('det')].map(t=>({cod:g(t,'cProd'),nome:g(t,'xProd'),qtd:+g(t,'qCom'),un:g(t,'uCom'),vun:+g(t,'vUnCom'),vt:+g(t,'vProd')}));
+  dhEmi=g(d,'dhEmi');const de=d.getElementsByTagName('dest')[0];dest=de?(g(de,'CPF')?'CPF '+fmtCPF(g(de,'CPF')):'CNPJ '+fmtCNPJ(g(de,'CNPJ'))):''}
+ const dh=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4)+' '+s.slice(11,19):'',hom=+nf.tpAmb===2;
+ return `<div class="cupom danfe" style="text-align:left"><div style="text-align:center"><b>${esc(em.nome)}</b><br>CNPJ ${esc(fmtCNPJ(em.cnpj))}${em.ie?' IE '+esc(em.ie):''}<br><span style="font-size:.9em">${esc(em.end)}</span></div><hr>
+ <div style="text-align:center"><b>DANFE NFC-e</b><br>Documento Auxiliar da Nota Fiscal<br>de Consumidor Eletrônica</div>
+ ${hom?'<hr><div style="text-align:center"><b>EMITIDA EM AMBIENTE DE HOMOLOGAÇÃO - SEM VALOR FISCAL</b></div>':''}<hr>
+ <div class="r" style="font-size:.85em"><span>Código Descrição</span><span>Qtd UN Vl.Unit Vl.Total</span></div>
+ ${itens.map(i=>`<div>${esc(i.cod)} ${esc(i.nome)}</div><div class="r"><span>${String(i.qtd).replace('.',',')} ${esc(i.un)} × ${brl(i.vun)}</span><span>${brl(i.vt)}</span></div>`).join('')}<hr>
+ <div class="r"><span>Qtd. total de itens</span><span>${itens.reduce((s,i)=>s+i.qtd,0)}</span></div><div class="r"><span>Valor total R$</span><span>${brl(v.sub||v.total)}</span></div>
+ ${v.desconto?`<div class="r"><span>Desconto R$</span><span>-${brl(v.desconto)}</span></div>`:''}<div class="r" style="font-size:1.1em"><b>Valor a pagar R$</b><b>${brl(v.total)}</b></div>
+ <div class="r" style="font-size:.85em;margin-top:4px"><span>FORMA PAGAMENTO</span><span>VALOR PAGO R$</span></div>
+ ${v.pags.map(p=>`<div class="r"><span>${esc(p.forma==='Crediário'?'Crédito loja (crediário)':p.forma)}</span><span>${brl(p.valor+(p.forma==='Dinheiro'?(v.troco||0):0))}</span></div>`).join('')}${v.troco?`<div class="r"><span>Troco R$</span><span>${brl(v.troco)}</span></div>`:''}<hr>
+ <div style="text-align:center">Consulte pela Chave de Acesso em<br>www.dfe.ms.gov.br/nfce/consulta<br><b style="font-size:.92em">${esc(fmtChave(nf.chave))}</b></div><hr>
+ <div style="text-align:center">${dest?'CONSUMIDOR '+esc(dest):'CONSUMIDOR NÃO IDENTIFICADO'}</div><hr>
+ <div style="text-align:center"><b>NFC-e nº ${String(nf.nNF).padStart(9,'0')} Série ${String(nf.serie).padStart(3,'0')} ${esc(dh(dhEmi)||dBR(v.data)+'/'+v.data.slice(0,4)+' '+(v.hora||''))}</b><br>Protocolo de autorização: ${esc(nf.nProt)}<br>Data de autorização: ${esc(dh(nf.dh))}</div>
+ <div class="qr" style="width:38mm;max-width:60%;margin:8px auto">${nf.qrSvg||''}</div>
+ ${X&&+X.g(X.d,'vTotTrib')?`<div style="text-align:center;font-size:.85em">Tributos totais incidentes (Lei Federal 12.741/2012): ${brl(+X.g(X.d,'vTotTrib'))}</div>`:''}</div>`}
+
+/* cancelamento com nota */
+function pedirCancelNF(v){sheetOS(`<div class="hd"><h2>Cancelar venda nº ${v.num}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+ <p>Essa venda tem a NFC-e nº ${v.nfce.nNF} autorizada. A nota será cancelada na SEFAZ e depois o estoque e o caixa são desfeitos.</p>
+ <label>Motivo do cancelamento (mínimo 15 letras)<textarea id="nfjust" rows="3" maxlength="255" placeholder="Ex.: cliente desistiu da compra no caixa"></textarea></label>
+ <div id="nfcerr"></div><button class="pri w" id="nfcgo" data-v="${esc(v.id)}" style="margin-top:12px;background:var(--out);border-color:var(--out)">Cancelar nota e venda</button>`)}
+async function cancelarComNF(id){const v=LJ.vendas.find(x=>x.id===id),j=($('#nfjust').value||'').trim(),e=m=>{$('#nfcerr').innerHTML=`<div class="err" style="margin-top:10px">${m}</div>`};
+ if(j.length<15)return e('Escreva o motivo com pelo menos 15 letras.');const b=$('#nfcgo');b.disabled=true;b.textContent='Cancelando na SEFAZ…';
+ try{const r=await agente('/cancelar',{chave:v.nfce.chave,nProt:v.nfce.nProt,justificativa:j},60000);
+  if(r.st!=='cancelada'){b.disabled=false;b.textContent='Cancelar nota e venda';return e('A SEFAZ não cancelou a nota: '+esc((r.cStat?r.cStat+' - ':'')+(r.xMotivo||'erro'))+'<br>A venda continua ativa.')}
+  v.nfce={...v.nfce,st:'cancelada',nProtCanc:r.nProt||'',just:j.slice(0,255),canceladaEm:hoje()};await API.updVenda(S.user.uid,v.id,{nfce:v.nfce});
+  fecharSheet();await desfazerVenda(v);toast('Nota e venda canceladas')}
+ catch(x){b.disabled=false;b.textContent='Cancelar nota e venda';e(esc(errMsg(x)))}}
+
+/* tela Mais › Nota fiscal */
+function nfPendentes(){const d=S.emp.nfceDesde||'9999';return LJ.vendas.filter(v=>!v.cancelada&&v.data>=d&&!(v.nfce&&['autorizada','nfe'].includes(v.nfce.st))).sort((a,b)=>a.num-b.num)}
+function vNFCe(){const e=S.emp,P=nfPendentes(),t=NFX.teste,mes=hoje().slice(0,7),aut=LJ.vendas.filter(v=>v.nfce&&v.nfce.xml&&v.data.startsWith(mes)).length;
+ return shell(`<a href="#mais" class="lnk">‹ Mais</a><h1>Nota fiscal (NFC-e)</h1>
+ <div class="card"><label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="nfon" ${e.nfceOn?'checked':''} style="width:22px;height:22px"> Emitir NFC-e pelo sistema</label>
+  <p class="mut" style="margin:8px 0 0">A nota é assinada pelo programa da nota, instalado no computador do balcão com o certificado digital da empresa. Vendas feitas no celular ficam pendentes e você emite por aqui, no computador do balcão.</p>
+  ${e.nfceOn?`<div class="stack" style="margin-top:12px"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="nfauto" ${e.nfceAuto!==false?'checked':''} style="width:20px;height:20px"> Emitir sozinho ao concluir a venda</label>
+  <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="nfimp" ${e.nfceImp!==false?'checked':''} style="width:20px;height:20px"> Imprimir a nota logo que for autorizada</label>
+  <details><summary class="mut" style="cursor:pointer">Avançado</summary><label style="margin-top:8px">Endereço do programa da nota<input id="nfurl" value="${esc(nfUrl())}"></label></details></div>`:''}</div>
+ ${e.nfceOn?`<div class="card"><b>Conexão</b><div id="nfteste" class="mut" style="margin-top:6px">${t?t:'Toque em testar no computador do balcão.'}</div><button id="nftestar" style="margin-top:10px">Testar programa e SEFAZ</button></div>
+ <div class="card"><b>Pendentes (${P.length})</b>${P.length?`<div style="margin-top:8px">${P.map(v=>`<div class="li"><div><b>Venda nº ${v.num}</b> · ${dBR(v.data)} ${esc(v.hora||'')} · ${brl(v.total)}<div class="d">${esc(((v.nfce||{}).msg||'Ainda não emitida').slice(0,120))}</div></div><button data-nfemit="${esc(v.id)}" ${NFX.busy[v.id]?'disabled':''}>${NFX.busy[v.id]?'Emitindo…':'Emitir'}</button></div>`).join('')}</div>${P.length>1?'<button class="pri w" id="nftodas" style="margin-top:10px">Emitir todas</button>':''}`:'<div class="mut" style="margin-top:6px">Nenhuma venda sem nota. 👍</div>'}</div>
+ <div class="card"><b>XML para a contabilidade</b><div class="mut" style="margin-top:6px">${aut} NFC-e emitida(s) em ${mes.slice(5)}/${mes.slice(0,4)}. O escritório também baixa as notas pelo painel dele.</div><label style="margin-top:10px">Mês<input type="month" id="nfmes" value="${mes}"></label><button id="nfxml" style="margin-top:10px">Baixar XMLs do mês (NFC-e e NF-e, .zip)</button></div>`:''}`)}
+async function testarAgente(){NFX.teste='Testando…';render();
+ try{const s=await agente('/status');let z='';try{const r=await agente('/sefaz',null,40000);z=r.cStat==='107'?'✅ SEFAZ-MS em operação':'⚠️ SEFAZ: '+esc((r.cStat||'')+' '+(r.xMotivo||''))}catch(x){z='⚠️ '+esc(errMsg(x))}
+  const cnpjOk=!S.emp.cnpj||soDig(S.emp.cnpj)===soDig(s.cnpj);
+  NFX.teste=`✅ Programa da nota ligado (versão ${esc(s.versao)})<br>Ambiente: <b>${s.ambiente==='producao'?'PRODUÇÃO (vale como nota)':'homologação (teste, sem valor fiscal)'}</b><br>CNPJ ${esc(fmtCNPJ(s.cnpj))}${cnpjOk?'':' <b style="color:var(--out)">— diferente do CNPJ desta empresa!</b>'}<br>Série ${s.serie} · próximo número ${s.proximo}<br>Certificado válido até ${esc(dBR(s.certificado_ate)+'/'+s.certificado_ate.slice(0,4))}<br>${z}`}
+ catch(x){NFX.teste='❌ '+esc(errMsg(x))}
+ if(S.tab==='nfce')render()}
+async function emitirTodas(){for(const v of nfPendentes()){const r=await emitirNFCe(v.id,false);if(r&&r.st==='pendente'&&/programa da nota/.test(r.msg||''))break}}
+
+/* ZIP simples (sem compressão) para baixar os XMLs */
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0}
+function zipar(arqs){const enc=new TextEncoder(),partes=[],dir=[];let off=0;
+ for(const a of arqs){const nome=enc.encode(a.nome),dados=enc.encode(a.texto),crc=crc32(dados),h=new DataView(new ArrayBuffer(30));
+  h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);h.setUint32(18,dados.length,true);h.setUint32(22,dados.length,true);h.setUint16(26,nome.length,true);
+  partes.push(h,nome,dados);const c=new DataView(new ArrayBuffer(46));c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,dados.length,true);c.setUint32(24,dados.length,true);c.setUint16(28,nome.length,true);c.setUint32(42,off,true);
+  dir.push(c,nome);off+=30+nome.length+dados.length}
+ const tam=dir.reduce((s,x)=>s+(x.byteLength||x.length),0),f=new DataView(new ArrayBuffer(22));f.setUint32(0,0x06054b50,true);f.setUint16(8,arqs.length,true);f.setUint16(10,arqs.length,true);f.setUint32(12,tam,true);f.setUint32(16,off,true);
+ return new Blob([...partes,...dir,f],{type:'application/zip'})}
+function baixarXMLs(){const mes=($('#nfmes')&&$('#nfmes').value)||hoje().slice(0,7);baixarZip(arqsXML(LJ.vendas,NT.lista,mes),'XML-'+soDig(S.emp.cnpj||'')+'-'+mes+'.zip')}
+
+const C128="11011001100,11001101100,11001100110,10010011000,10010001100,10001001100,10011001000,10011000100,10001100100,11001001000,11001000100,11000100100,10110011100,10011011100,10011001110,10111001100,10011101100,10011100110,11001110010,11001011100,11001001110,11011100100,11001110100,11101101110,11101001100,11100101100,11100100110,11101100100,11100110100,11100110010,11011011000,11011000110,11000110110,10100011000,10001011000,10001000110,10110001000,10001101000,10001100010,11010001000,11000101000,11000100010,10110111000,10110001110,10001101110,10111011000,10111000110,10001110110,11101110110,11010001110,11000101110,11011101000,11011100010,11011101110,11101011000,11101000110,11100010110,11101101000,11101100010,11100011010,11101111010,11001000010,11110001010,10100110000,10100001100,10010110000,10010000110,10000101100,10000100110,10110010000,10110000100,10011010000,10011000010,10000110100,10000110010,11000010010,11001010000,11110111010,11000010100,10001111010,10100111100,10010111100,10010011110,10111100100,10011110100,10011110010,11110100100,11110010100,11110010010,11011011110,11011110110,11110110110,10101111000,10100011110,10001011110,10111101000,10111100010,11110101000,11110100010,10111011110,10111101110,11101011110,11110101110,11010000100,11010010000,11010011100".split(","),C128S="1100011101011";
+/* ---------- NF-e modelo 55 (venda para empresa/outro estado, devolução, carta de correção) ---------- */
+const NT={lista:[],ok:false,ed:null,busy:{},q:''};
+const UFS='AC AL AM AP BA CE DF ES GO MA MG MS MT PA PB PE PI PR RJ RN RO RR RS SC SE SP TO'.split(' ');
+const FORMAS_NFE=['Pix','Dinheiro','Boleto','Crediário','Débito','Crédito'];
+const fmtDoc=d=>(d=soDig(d)).length===14?fmtCNPJ(d):d.length===11?fmtCPF(d):d;
+function cnpjOk(c){c=soDig(c);if(c.length!==14||/^(\d)\1+$/.test(c))return false;const dv=n=>{let s=0,p=n-7;for(let i=0;i<n;i++){s+=+c[i]*p--;if(p<2)p=9}const r=s%11;return r<2?0:11-r};return dv(12)===+c[12]&&dv(13)===+c[13]}
+async function carregarNotas(){if(!S.user||S.isAdmin)return;try{NT.lista=await API.listNotas(S.user.uid,addDia(hoje(),-370));NT.ok=true}catch(e){NT.ok=false}}
+const stNota=n=>(n.nfe&&n.nfe.st)||'rascunho';
+const destinos=()=>S.emp.destinos||[];
+
+function novaNota(base){NT.ed=Object.assign({tipo:'venda',dest:{doc:'',nome:'',ie:'',indIEDest:'1',lgr:'',nro:'',cpl:'',bairro:'',mun:'',cMun:'',uf:'MS',cep:'',fone:'',email:''},
+ itens:[],desconto:'',modFrete:'9',pag:{forma:'Pix',prazo:false},indPres:'1',final:'',refNFe:'',credSN:S.emp.pCredSN||'',infCpl:'',estoque:true,lancar:true,origemVenda:''},base||{});go('nfe');render()}
+function notaDeVenda(v){const it=vendaFiscal(v).itens.map(i=>({...i,cfop:''}));
+ const cad=todosClientes().find(c=>c._k===chaveNome(v.cli||''))||{};
+ novaNota({itens:it,desconto:v.desconto||0,pag:{forma:(v.pags[0]||{}).forma||'Pix',prazo:v.pags.some(p=>p.forma==='Crediário')},estoque:false,lancar:false,origemVenda:v.id,
+  dest:{...novaNotaDest(),doc:v.cpf||'',nome:v.cli||'',fone:v.fone||cad.fone||'',indIEDest:'9'},infCpl:'Referente a venda nº '+v.num+' de '+dBR(v.data)+'/'+v.data.slice(0,4)+'.'})}
+const novaNotaDest=()=>({doc:'',nome:'',ie:'',indIEDest:'9',lgr:'',nro:'',cpl:'',bairro:'',mun:'',cMun:'',uf:'MS',cep:'',fone:'',email:''});
+function finalNota(e){if(e.tipo==='devolucao')return false;if(e.final!=='')return e.final==='1';const d=e.dest;return soDig(d.doc).length===11||d.indIEDest==='9'}
+function cfopSug(e,i){const devol=e.tipo==='devolucao',inter=(e.dest.uf||'MS')!=='MS',st=String(i.csosn||'')==='500';
+ if(i.cfop)return i.cfop;if(devol)return (inter?'6':'5')+(st?'411':'202');if(!inter)return st?'5405':'5102';
+ if(e.dest.indIEDest==='9')return '6108';return st?'6404':'6102'}
+function totNota(e){const sub=e.itens.reduce((s,i)=>s+(+i.qtd||0)*(+i.preco||0),0),desc=Math.min(sub,parseValor(String(e.desconto||0))||0),ipi=e.tipo==='devolucao'?e.itens.reduce((s,i)=>s+(+i.vIPIDevol||0),0):0;
+ return{sub:Math.round(sub*100)/100,desc:Math.round(desc*100)/100,tot:Math.round((sub-desc+ipi)*100)/100,ipi}}
+
+function vNFe(){if(NT.ed)return vNotaEd();
+ const L=[...NT.lista].filter(n=>stNota(n)!=='descartada').sort((a,b)=>(b.data+(b.hora||'')).localeCompare(a.data+(a.hora||'')));
+ return shell(`<a href="#mais" class="lnk">‹ Mais</a><div style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h1>NF-e (nota modelo 55)</h1><button class="pri" id="nenova">+ Nova NF-e</button></div>
+ <p class="mut" style="margin-top:0">Para vender a empresas, mandar para outro estado, devolver ao fornecedor ou quando o cliente pede nota com endereço. No caixa do dia a dia continue usando a NFC-e.</p>
+ ${!nfOn()?'<div class="pill p-w" style="white-space:normal;display:block;margin-bottom:10px">Antes, ligue a emissão em Mais › Nota fiscal (NFC-e) e teste o programa da nota no computador do balcão.</div>':''}
+ <div class="card">${L.length?L.map(itemNota).join(''):'<p class="mut">Nenhuma NF-e ainda.</p>'}</div>`)}
+function itemNota(n){const st=stNota(n),f=n.nfe||{},t=totNota(n);
+ const pill={autorizada:`<span class="pill p-in">NF-e ${f.nNF}</span>`,cancelada:'<span class="pill p-g">cancelada</span>',rejeitada:'<span class="pill p-out">recusada</span>',pendente:'<span class="pill p-w">pendente</span>',rascunho:'<span class="pill p-g">rascunho</span>'}[st]||'';
+ return `<button class="li" data-never="${esc(n.id)}" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:10px 0;min-height:0;font-weight:400">
+ <div><b>${n.tipo==='devolucao'?'Devolução':'Venda'} · ${esc(n.dest.nome||'(sem destinatário)')}</b><div class="d">${dBR(n.data)}/${n.data.slice(0,4)} · ${esc(fmtDoc(n.dest.doc))} · ${esc(n.dest.mun?n.dest.mun+'/'+n.dest.uf:'')}</div></div>
+ <div style="text-align:right"><div class="v">${brl(t.tot)}</div>${pill}</div></button>`}
+
+function vNotaEd(){const e=NT.ed,d=e.dest,devol=e.tipo==='devolucao',T=totNota(e),pj=soDig(d.doc).length===14,fin=finalNota(e),R=NT.q?buscaProd(NT.q):[];
+ const inp=(k,lab,extra='')=>`<label>${lab}<input data-nf="dest.${k}" value="${esc(d[k]||'')}" ${extra}></label>`;
+ return shell(`<a href="#nfe" class="lnk" id="nesair">‹ NF-e</a><h1>${e.id?'Editar NF-e':'Nova NF-e'}</h1>
+ <div class="card"><div class="chips">${[['venda','Venda'],['devolucao','Devolução ao fornecedor']].map(([k,t])=>`<button class="chip ${e.tipo===k?'on':''}" data-netipo="${k}">${t}</button>`).join('')}</div>
+  ${devol?`<label style="margin-top:12px">Chave de acesso da nota de compra (44 números)<input data-nf="refNFe" inputmode="numeric" value="${esc(e.refNFe)}" placeholder="Está no DANFE do fornecedor, embaixo do código de barras"></label>`:''}</div>
+ <div class="card"><h2>${devol?'Fornecedor':'Destinatário'}</h2>
+  <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end"><label>CPF ou CNPJ<input data-nf="dest.doc" id="nedoc" inputmode="numeric" value="${esc(fmtDoc(d.doc))}" list="nedests" autocomplete="off"></label><button id="necnpj" style="min-height:50px">Buscar CNPJ</button></div>
+  <datalist id="nedests">${destinos().map(x=>`<option value="${esc(fmtDoc(x.doc))}">${esc(x.nome)}</option>`).join('')}</datalist>
+  <div class="stack" style="margin-top:10px">${inp('nome','Nome / razão social','maxlength="60"')}
+  <label>Situação do ICMS<select data-nfr="dest.indIEDest"><option value="1" ${d.indIEDest==='1'?'selected':''}>Contribuinte, tem Inscrição Estadual</option><option value="2" ${d.indIEDest==='2'?'selected':''}>Contribuinte isento de IE</option><option value="9" ${d.indIEDest==='9'?'selected':''}>Não contribuinte (pessoa física, escola, órgão…)</option></select></label>
+  ${d.indIEDest==='1'?inp('ie','Inscrição Estadual','inputmode="numeric"'):''}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${inp('cep','CEP (preenche o endereço)','inputmode="numeric" id="necep"')}<label>UF<select data-nfr="dest.uf">${UFS.map(u=>`<option ${u===(d.uf||'MS')?'selected':''}>${u}</option>`).join('')}</select></label></div>
+  ${inp('lgr','Rua / avenida','maxlength="60"')}<div style="display:grid;grid-template-columns:1fr 2fr;gap:8px">${inp('nro','Número')}${inp('cpl','Complemento')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${inp('bairro','Bairro')}${inp('mun','Cidade')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${inp('fone','Telefone','inputmode="tel"')}${inp('email','E-mail (recebe o XML)','type="email"')}</div></div>
+  ${(d.uf||'MS')!=='MS'?'<div class="pill p-w" style="margin-top:8px;white-space:normal;display:block">Operação para outro estado: CFOP começa com 6. A A11 é do Simples, então não destaca o DIFAL na nota.</div>':''}</div>
+ <div class="card"><h2>Produtos</h2>
+  <input id="neq" type="search" value="${esc(NT.q)}" placeholder="Buscar produto para incluir" autocomplete="off">
+  ${R.length?`<div style="max-height:260px;overflow:auto;margin-top:6px">${R.flatMap(p=>(p.vars||[]).map(v=>`<button class="li" data-neadd="${esc(p.id)}|${esc(v.id)}" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:8px 0;min-height:0;font-weight:400"><div><b>${esc(p.nome)}</b> ${esc(descVar(v))}<div class="d">${+v.est||0} em estoque${soDig(p.ncm).length!==8?' · <b style="color:var(--out)">sem NCM</b>':''}</div></div><span>${brl(precoVar(p,v))}</span></button>`)).slice(0,40).join('')}</div>`:''}
+  <button class="lnk" id="neavulso" style="margin-top:8px">+ Item que não está no cadastro</button>
+  ${e.itens.map((i,ix)=>`<div style="border-top:1px solid var(--line);padding:10px 0;margin-top:8px">
+   <div style="display:flex;justify-content:space-between;gap:8px"><b>${i.pid?esc(i.nome+(i.var?' '+i.var:'')):''}${(()=>{if(!i.pid||e.origemVenda||!e.estoque)return '';const p=LJ.prods.find(x=>x.id===i.pid),v=p&&p.vars.find(x=>x.id===i.vid),est=v?+v.est||0:0;return (+i.qtd||0)>est?` <span class="pill p-w">só ${est} em estoque</span>`:''})()}</b><button class="x" data-nedel="${ix}" aria-label="Tirar item" style="width:36px;height:36px">×</button></div>
+   ${i.pid?'':`<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px"><label>Descrição<input data-nf="itens.${ix}.nome" value="${esc(i.nome)}" maxlength="120"></label><label>NCM<input data-nf="itens.${ix}.ncm" value="${esc(i.ncm||'')}" inputmode="numeric"></label></div>`}
+   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><label>Qtd<input data-nf="itens.${ix}.qtd" data-num value="${esc(String(i.qtd).replace('.',','))}" inputmode="decimal"></label><label>Valor unit.<input data-nf="itens.${ix}.preco" data-num value="${esc(String(i.preco).replace('.',','))}" inputmode="decimal"></label><label>CFOP<input data-nf="itens.${ix}.cfop" value="${esc(i.cfop||'')}" placeholder="${cfopSug(e,i)}" inputmode="numeric" maxlength="4"></label></div>
+   ${devol?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><label>ICMS destacado na compra (R$)<input data-nf="itens.${ix}.vICMS" data-num value="${esc(String(i.vICMS||'').replace('.',','))}" inputmode="decimal" placeholder="0,00"></label><label>IPI a devolver (R$)<input data-nf="itens.${ix}.vIPIDevol" data-num value="${esc(String(i.vIPIDevol||'').replace('.',','))}" inputmode="decimal" placeholder="0,00"></label></div>${+i.vICMS?`<label>Alíquota do ICMS da compra (%)<input data-nf="itens.${ix}.pICMS" data-num value="${esc(String(i.pICMS||'').replace('.',','))}" inputmode="decimal"></label>`:''}`:''}</div>`).join('')}
+  <div id="netot" class="tot" style="margin-top:10px">${totHTML(T)}</div></div>
+ <div class="card"><h2>${devol?'Frete e observações':'Venda'}</h2><div class="stack">
+  ${devol?'':`<label>Quem compra<select data-nfr="final"><option value="" ${e.final===''?'selected':''}>Automático (${fin?'consumidor final':'revenda'})</option><option value="0" ${e.final==='0'?'selected':''}>Empresa vai revender</option><option value="1" ${e.final==='1'?'selected':''}>Consumidor final / uso próprio</option></select></label>
+  <label>Como foi a venda<select data-nfr="indPres">${[['1','Na loja (presencial)'],['3','Por telefone ou WhatsApp'],['2','Pela internet'],['4','Entrega em domicílio'],['9','Outro']].map(([k,t])=>`<option value="${k}" ${e.indPres===k?'selected':''}>${t}</option>`).join('')}</select></label>
+  <label>Desconto na nota (R$)<input data-nf="desconto" data-num value="${esc(String(e.desconto||'').replace('.',','))}" inputmode="decimal" placeholder="0,00"></label>
+  <label>Forma de pagamento<select data-nfr="pag.forma">${FORMAS_NFE.map(f=>`<option ${e.pag.forma===f?'selected':''}>${f}</option>`).join('')}</select></label>
+  <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-nfr="pag.prazo" ${e.pag.prazo?'checked':''} style="width:20px;height:20px"> Pagamento a prazo</label>
+  ${!fin&&d.indIEDest==='1'?`<label>Crédito de ICMS para o comprador (%) — opcional<input data-nf="credSN" data-num value="${esc(String(e.credSN||'').replace('.',','))}" inputmode="decimal" placeholder="Deixe vazio se não usa"></label>`:''}`}
+  <label>Frete<select data-nfr="modFrete">${[['9','Sem frete'],['0','Por conta do remetente (a loja paga - CIF)'],['1','Por conta do destinatário (cliente paga - FOB)']].map(([k,t])=>`<option value="${k}" ${e.modFrete===k?'selected':''}>${t}</option>`).join('')}</select></label>
+  ${devol?'':`<label>Nº do pedido do cliente (opcional)<input data-nf="pedido" value="${esc(e.pedido||'')}" maxlength="15"></label>`}
+  <label>Informações complementares<textarea data-nf="infCpl" rows="2" maxlength="1000">${esc(e.infCpl||'')}</textarea></label>
+  ${e.origemVenda?'<div class="mut">Esta nota é de uma venda do caixa: o estoque e o caixa já foram movimentados na venda.</div>':`<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-nfr="estoque" ${e.estoque?'checked':''} style="width:20px;height:20px"> Dar baixa no estoque quando a nota for autorizada</label>
+  ${devol?'':`<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-nfr="lancar" ${e.lancar?'checked':''} style="width:20px;height:20px"> Lançar a entrada no caixa</label>`}`}</div></div>
+ <div id="neerr"></div>
+ <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:20px"><button id="nesalva">Salvar rascunho</button><button class="pri" id="neemite" style="min-height:56px">Emitir NF-e</button></div>`)}
+const totHTML=T=>`<span>Total da nota${T.desc?` <small class="mut">(${brl(T.sub)} − ${brl(T.desc)})</small>`:''}${T.ipi?` <small class="mut">+ IPI ${brl(T.ipi)}</small>`:''}</span><span class="big">${brl(T.tot)}</span>`;
+function setPath(o,p,v){const k=p.split('.');let x=o;for(let i=0;i<k.length-1;i++)x=x[k[i]];x[k[k.length-1]]=v}
+function getPath(o,p){return p.split('.').reduce((x,k)=>x==null?x:x[k],o)}
+async function buscarCEP(cep){try{const r=await fetch('https://viacep.com.br/ws/'+cep+'/json/');const j=await r.json();if(j.erro)return toast('CEP não encontrado');
+ const d=NT.ed.dest;Object.assign(d,{lgr:j.logradouro||d.lgr,bairro:j.bairro||d.bairro,mun:j.localidade||d.mun,uf:j.uf||d.uf,cMun:j.ibge||'',cep});render()}catch(x){toast('Não consegui buscar o CEP agora')}}
+async function buscarCNPJ(){const c=soDig(NT.ed.dest.doc);if(!cnpjOk(c))return toast('Digite um CNPJ válido para buscar');
+ const b=$('#necnpj');b.disabled=true;b.textContent='Buscando…';
+ try{const r=await fetch('https://brasilapi.com.br/api/cnpj/v1/'+c);if(!r.ok)throw 0;const j=await r.json(),d=NT.ed.dest;
+  Object.assign(d,{nome:(j.razao_social||d.nome).slice(0,60),lgr:[j.descricao_tipo_de_logradouro,j.logradouro].filter(Boolean).join(' ')||d.lgr,nro:j.numero||d.nro,cpl:(j.complemento||'').slice(0,60),bairro:j.bairro||d.bairro,mun:j.municipio||d.mun,uf:j.uf||d.uf,cep:soDig(j.cep||d.cep),cMun:j.codigo_municipio_ibge?String(j.codigo_municipio_ibge):'',fone:soDig(j.ddd_telefone_1||d.fone),email:(j.email||d.email||'').toLowerCase()});
+  if(!d.cMun&&d.cep.length===8)return buscarCEP(d.cep);render();toast('Dados do CNPJ preenchidos. Confira a Inscrição Estadual.')}
+ catch(x){b.disabled=false;b.textContent='Buscar CNPJ';toast('Não encontrei esse CNPJ agora. Preencha à mão.')}}
+async function garantirMunicipio(d){if(soDig(d.cMun).length===7)return true;if(!d.mun||!d.uf)return false;
+ try{const r=await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados/'+d.uf+'/municipios');const L=await r.json(),k=chaveNome(d.mun),m=L.find(x=>chaveNome(x.nome)===k);if(m){d.cMun=String(m.id);d.mun=m.nome;return true}}catch(x){}return false}
+function conferirNota(e){const d=e.dest,er=[],doc=soDig(d.doc);
+ if(!(doc.length===11?cpfOk(doc):cnpjOk(doc)))er.push('CPF ou CNPJ válido');if(!d.nome.trim())er.push('nome');
+ if(d.indIEDest==='1'&&!soDig(d.ie))er.push('Inscrição Estadual (ou mude para isento/não contribuinte)');
+ if(!d.lgr.trim()||!d.bairro.trim()||!d.mun.trim())er.push('endereço completo (rua, bairro e cidade)');
+ if(!e.itens.length)er.push('pelo menos um produto');
+ e.itens.forEach(i=>{if(!(+i.qtd>0)||!(+i.preco>0))er.push('quantidade e valor de '+(i.nome||'item'));if(soDig(i.ncm).length!==8)er.push('NCM de '+(i.nome||'item'))});
+ if(e.tipo==='devolucao'&&soDig(e.refNFe).length!==44)er.push('chave da nota de compra com 44 números');
+ return [...new Set(er)]}
+function notaPayload(n){const fin=finalNota(n),T=totNota(n),cred=parseValor(String(n.credSN||''))||0;
+ return{tipo:n.tipo,dest:{...n.dest,doc:soDig(n.dest.doc)},consumidorFinal:fin,indPres:n.indPres,desconto:T.desc,modFrete:n.modFrete,refNFe:n.tipo==='devolucao'?[soDig(n.refNFe)]:[],
+  credSN:!fin&&n.dest.indIEDest==='1'&&cred>0?cred:0,infCpl:n.infCpl||'',pags:[{forma:n.pag.forma,valor:T.tot,prazo:!!n.pag.prazo}],
+  pedido:(n.pedido||'').trim(),itens:n.itens.map(i=>({pid:i.pid||'',cod:i.cod||((LJ.prods.find(p=>p.id===i.pid)||{}).ref)||'',nome:i.nome,var:i.var||'',qtd:+i.qtd,preco:+i.preco,ncm:soDig(i.ncm),cfop:soDig(i.cfop)||cfopSug(n,i),csosn:i.csosn||'102',orig:i.orig||'0',un:i.un||'UN',ean:i.ean||'',
+   vICMS:+i.vICMS||0,pICMS:+i.pICMS||0,vBC:+i.vICMS?Math.round((+i.qtd)*(+i.preco)*100)/100:0,vIPIDevol:+i.vIPIDevol||0}))}}
+async function salvarNota(emitir){const e=NT.ed,er=$('#neerr'),msg=m=>{er.innerHTML=`<div class="err" style="margin:0 0 10px">${m}</div>`;er.scrollIntoView({block:'center'})};
+ const d=e.dest;d.doc=soDig(d.doc);d.cep=soDig(d.cep);d.ie=soDig(d.ie);
+ if(emitir){await garantirMunicipio(d);const f=conferirNota(e);if(soDig(d.cMun).length!==7)f.push('cidade com a UF certa (não achei o código IBGE)');if(f.length)return msg('Falta: '+f.join('; ')+'.')}
+ const {id,...dados}=e,agora=new Date();dados.data=dados.data||hoje();dados.hora=dados.hora||pad(agora.getHours())+':'+pad(agora.getMinutes());dados.nfe=dados.nfe&&dados.nfe.st!=='rascunho'?dados.nfe:{st:emitir?'pendente':'rascunho'};
+ try{const n=await API.saveNota(S.user.uid,{...dados,id});const ix=NT.lista.findIndex(x=>x.id===n.id);if(ix>=0)NT.lista[ix]=n;else NT.lista.push(n);
+  if(soDig(d.doc).length>=11){const L=destinos().filter(x=>soDig(x.doc)!==d.doc);L.push({...d});try{await API.saveEmp(S.user.uid,{destinos:L.slice(-300)});S.emp.destinos=L.slice(-300)}catch(x){}}
+  NT.ed=null;NT.q='';render();if(emitir){mostrarNota(n.id);emitirNota(n.id)}else toast('Rascunho salvo')}catch(x){msg(esc(errMsg(x)))}}
+async function emitirNota(id){const n=NT.lista.find(x=>x.id===id);if(!n||NT.busy[id]||['autorizada','cancelada'].includes(stNota(n)))return;
+ NT.busy[id]=1;atualizaNotaAberta(id);let nf;
+ try{const r=await agente('/nfe/emitir',{id:n.id,nota:notaPayload(n)},120000);
+  if(r.st==='autorizada')nf={st:'autorizada',chave:r.chave||'',nProt:r.nProt||'',nNF:r.nNF||0,serie:r.serie||1,tpAmb:r.tpAmb||2,dh:r.dhRecbto||'',xml:r.xml||''};
+  else nf={st:r.st==='rejeitada'?'rejeitada':'pendente',cStat:r.cStat||'',msg:(r.cStat?r.cStat+' - ':'')+(r.xMotivo||'A nota não foi autorizada.'),nNF:r.nNF||0}}
+ catch(x){nf={st:'pendente',msg:errMsg(x)}}
+ delete NT.busy[id];n.nfe=nf;const up={nfe:nf};
+ try{if(nf.st==='autorizada'){
+   if(n.estoque&&!n.origemVenda&&!n.baixou){await mexerEstoque(n.itens.filter(i=>i.pid&&i.vid),-1);n.baixou=true;up.baixou=true}
+   if(n.tipo==='venda'&&n.lancar&&!n.origemVenda&&!(n.lancs||[]).length){const T=totNota(n);const l=await API.addLanc(S.user.uid,{tipo:'in',valor:T.tot,cat:'venda',forma:n.pag.forma,nota:true,data:hoje(),desc:('NF-e nº '+nf.nNF+' - '+n.dest.nome).slice(0,80)});n.lancs=[l.id];up.lancs=n.lancs;if(hoje().startsWith(S.ano+'-'))S.lanc.push(l)}
+   if(n.origemVenda){const v=LJ.vendas.find(x=>x.id===n.origemVenda);const vn={st:'nfe',nNF:nf.nNF,chave:nf.chave,notaId:n.id};if(v)v.nfce=vn;await API.updVenda(S.user.uid,n.origemVenda,{nfce:vn})}}
+  await API.saveNota(S.user.uid,{...n,...up})}catch(x){toast('A nota saiu, mas não consegui salvar tudo no sistema: '+errMsg(x))}
+ atualizaNotaAberta(id);if(S.tab==='nfe')render();
+ if(nf.st==='autorizada'){toast('NF-e nº '+nf.nNF+' autorizada');if(S.emp.nfceImp!==false)imprimir(danfeA4(n),'p-a4')}else toast('NF-e não emitida: '+nf.msg.slice(0,140))}
+function atualizaNotaAberta(id){if(NT.aberta===id&&$('#sheet').classList.contains('on'))mostrarNota(id)}
+function mostrarNota(id){const n=NT.lista.find(x=>x.id===id);if(!n)return;NT.aberta=id;const st=stNota(n),f=n.nfe||{},T=totNota(n);
+ sheetOS(`<div class="hd"><h2>${n.tipo==='devolucao'?'Devolução':'NF-e de venda'}${f.nNF&&st!=='rascunho'?' nº '+f.nNF:''}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+ <div><b>${esc(n.dest.nome)}</b><div class="mut">${esc(fmtDoc(n.dest.doc))} · ${esc(n.dest.mun+'/'+n.dest.uf)}</div></div>
+ <div style="margin:10px 0">${n.itens.map(i=>`<div class="r" style="display:flex;justify-content:space-between;gap:8px"><span>${(+i.qtd)}× ${esc(i.nome+(i.var?' '+i.var:''))}</span><span>${brl(i.qtd*i.preco)}</span></div>`).join('')}<div style="display:flex;justify-content:space-between;font-weight:700;margin-top:6px"><span>Total</span><span>${brl(T.tot)}</span></div></div>
+ ${st==='autorizada'?`<div class="ok">NF-e nº <b>${f.nNF}</b> autorizada${+f.tpAmb===2?' <b>(homologação, sem valor fiscal)</b>':''}<div class="mut" style="font-size:12px;word-break:break-all;margin-top:4px">Chave ${esc(fmtChave(f.chave))}</div>${(n.cces||[]).length?`<div class="mut" style="margin-top:4px">${n.cces.length} carta(s) de correção</div>`:''}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button class="pri" data-neimp="${esc(n.id)}">Imprimir DANFE</button><button data-nexml="${esc(n.id)}">Baixar XML</button><button data-necce="${esc(n.id)}">Carta de correção</button><button data-necanc="${esc(n.id)}" style="color:var(--out)">Cancelar NF-e</button></div>`
+ :st==='cancelada'?`<div class="pill p-g" style="white-space:normal;display:block">NF-e nº ${f.nNF} cancelada${f.canceladaEm?' em '+dBR(f.canceladaEm):''}.</div><button class="w" data-nexml="${esc(n.id)}" style="margin-top:10px">Baixar XML</button>`
+ :NT.busy[n.id]?'<div class="pill p-w" style="display:block;text-align:center;padding:12px">Emitindo a NF-e na SEFAZ…</div>'
+ :`${f.msg?`<div class="${st==='rejeitada'?'err':'pill p-w'}" style="white-space:normal;display:block">${st==='rejeitada'?'<b>A SEFAZ recusou.</b> ':''}${esc(f.msg)}</div>`:''}
+  <div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-top:12px"><button data-needit="${esc(n.id)}">Editar</button><button class="pri" data-neemit="${esc(n.id)}">Emitir NF-e</button></div>
+  <button class="lnk" data-nedesc="${esc(n.id)}" style="margin-top:10px;color:var(--out)">Descartar ${st==='rascunho'?'rascunho':'esta nota'}</button>`}`)}
+function pedirCCe(n){const seq=(n.cces||[]).length+1;sheetOS(`<div class="hd"><h2>Carta de correção</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+ <p class="mut">Serve para corrigir dados como endereço, descrição ou observação. <b>Não</b> pode mudar valor, quantidade, imposto, quem compra/vende ou a data. Cada carta nova substitui a anterior, então escreva todas as correções juntas.</p>
+ ${(n.cces||[]).length?`<div class="mut" style="margin-bottom:8px">Última carta (nº ${n.cces.length}): ${esc(n.cces[n.cces.length-1].texto)}</div>`:''}
+ <label>O que corrigir (mínimo 15 letras)<textarea id="ccetxt" rows="4" maxlength="1000" placeholder="Ex.: Onde se lê bairro Centro, leia-se bairro Jardim América."></textarea></label>
+ <div id="cceerr"></div><button class="pri w" id="ccego" data-n="${esc(n.id)}" data-seq="${seq}" style="margin-top:12px">Enviar carta de correção nº ${seq}</button>`)}
+async function enviarCCe(id,seq){const n=NT.lista.find(x=>x.id===id),t=($('#ccetxt').value||'').trim(),e=m=>{$('#cceerr').innerHTML=`<div class="err" style="margin-top:10px">${m}</div>`};
+ if(t.length<15)return e('Escreva a correção com pelo menos 15 letras.');if(seq>20)return e('Limite de 20 cartas por nota.');const b=$('#ccego');b.disabled=true;b.textContent='Enviando…';
+ try{const r=await agente('/nfe/cce',{chave:n.nfe.chave,correcao:t,seq},60000);
+  if(r.st!=='registrada'){b.disabled=false;b.textContent='Enviar carta de correção nº '+seq;return e('A SEFAZ não registrou: '+esc((r.cStat?r.cStat+' - ':'')+(r.xMotivo||'erro')))}
+  n.cces=[...(n.cces||[]),{seq,texto:t,nProt:r.nProt||'',dh:new Date().toISOString(),xml:r.xml||''}];await API.saveNota(S.user.uid,n);
+  imprimir(cceHTML(n,n.cces[n.cces.length-1]),'p-a4');mostrarNota(id);toast('Carta de correção registrada')}
+ catch(x){b.disabled=false;b.textContent='Enviar carta de correção nº '+seq;e(esc(errMsg(x)))}}
+function pedirCancNota(n){sheetOS(`<div class="hd"><h2>Cancelar NF-e nº ${n.nfe.nNF}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+ <p class="mut">Só dá para cancelar se a mercadoria ainda não saiu, em até 24 horas da autorização. Depois disso, o certo é fazer nota de devolução.${n.baixou?' O estoque volta e o lançamento no caixa é apagado.':''}</p>
+ <label>Motivo do cancelamento (mínimo 15 letras)<textarea id="nejust" rows="3" maxlength="255"></textarea></label><div id="necerr"></div>
+ <button class="pri w" id="necgo" data-n="${esc(n.id)}" style="margin-top:12px;background:var(--out);border-color:var(--out)">Cancelar na SEFAZ</button>`)}
+async function cancelarNota(id){const n=NT.lista.find(x=>x.id===id),j=($('#nejust').value||'').trim(),e=m=>{$('#necerr').innerHTML=`<div class="err" style="margin-top:10px">${m}</div>`};
+ if(j.length<15)return e('Escreva o motivo com pelo menos 15 letras.');const b=$('#necgo');b.disabled=true;b.textContent='Cancelando…';
+ try{const r=await agente('/nfe/cancelar',{chave:n.nfe.chave,nProt:n.nfe.nProt,justificativa:j},60000);
+  if(r.st!=='cancelada'){b.disabled=false;b.textContent='Cancelar na SEFAZ';return e('A SEFAZ não cancelou: '+esc((r.cStat?r.cStat+' - ':'')+(r.xMotivo||'erro')))}
+  n.nfe={...n.nfe,st:'cancelada',nProtCanc:r.nProt||'',just:j,canceladaEm:hoje()};
+  if(n.baixou){await mexerEstoque(n.itens.filter(i=>i.pid&&i.vid),1);n.baixou=false}
+  for(const l of n.lancs||[]){await API.delLanc(S.user.uid,l);S.lanc=S.lanc.filter(x=>x.id!==l)}n.lancs=[];
+  if(n.origemVenda){const v=LJ.vendas.find(x=>x.id===n.origemVenda),vn={st:'pendente',msg:'A NF-e nº '+n.nfe.nNF+' desta venda foi cancelada.'};if(v)v.nfce=vn;await API.updVenda(S.user.uid,n.origemVenda,{nfce:vn})}
+  await API.saveNota(S.user.uid,n);mostrarNota(id);render();toast('NF-e cancelada')}
+ catch(x){b.disabled=false;b.textContent='Cancelar na SEFAZ';e(esc(errMsg(x)))}}
+function baixarArq(nome,texto,tipo='application/xml'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([texto],{type:tipo}));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+
+/* DANFE A4 */
+function code128C(num,h=46){const d=String(num).replace(/\D/g,'');const c=[105];for(let i=0;i<d.length;i+=2)c.push(+d.substr(i,2));
+ let s=c[0];for(let i=1;i<c.length;i++)s+=c[i]*i;c.push(s%103);const bits=c.map(x=>C128[x]).join('')+C128S;
+ let r='',x=0;for(let i=0;i<bits.length;){let j=i;while(j<bits.length&&bits[j]===bits[i])j++;if(bits[i]==='1')r+=`<rect x="${x}" y="0" width="${j-i}" height="${h}"/>`;x+=j-i;i=j}
+ return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${x} ${h}" preserveAspectRatio="none" style="width:100%;height:12mm">${r}</svg>`}
+function danfeA4(n){const f=n.nfe||{},X=f.xml&&lerXML(f.xml);if(!X)return '<p>Sem XML autorizado.</p>';const{d,g}=X,q=t=>d.getElementsByTagName(t)[0];
+ const emit=q('emit'),ee=q('enderEmit'),de=q('dest'),ed=q('enderDest'),tot=q('ICMSTot'),dh=s=>s?s.slice(8,10)+'/'+s.slice(5,7)+'/'+s.slice(0,4):'',hr=s=>s?s.slice(11,19):'';
+ const N=v=>(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),cx=(r,v,st='')=>`<td style="${st}"><div class="rt">${r}</div><div class="vl">${v===''||v==null?'&nbsp;':v}</div></td>`;
+ const hom=g(d,'tpAmb')==='2',canc=f.st==='cancelada',nnf=String(g(d,'nNF')).padStart(9,'0').replace(/(\d{3})(\d{3})(\d{3})/,'$1.$2.$3'),ser=String(g(d,'serie')).padStart(3,'0');
+ const dets=[...d.getElementsByTagName('det')].map(t=>{const sn=t.getElementsByTagName('CSOSN')[0];return`<tr><td>${esc(g(t,'cProd'))}</td><td>${esc(g(t,'xProd'))}</td><td>${g(t,'NCM')}</td><td>${g(t,'orig')}${sn?sn.textContent:''}</td><td>${g(t,'CFOP')}</td><td>${esc(g(t,'uCom'))}</td><td class="n">${(+g(t,'qCom')).toLocaleString('pt-BR')}</td><td class="n">${N(g(t,'vUnCom'))}</td><td class="n">${N(g(t,'vProd'))}</td><td class="n">${N(g(t,'vDesc'))}</td><td class="n">${N(g(t,'vBC'))}</td><td class="n">${N(g(t,'vICMS'))}</td><td class="n">0,00</td><td class="n">${N(g(t,'pICMS'))}</td></tr>`}).join('');
+ const mf={0:'0-Por conta do Rem',1:'1-Por conta do Dest',2:'2-Terceiros',9:'9-Sem Frete'}[g(d,'modFrete')]||g(d,'modFrete');
+ const docD=g(de,'CNPJ')?fmtCNPJ(g(de,'CNPJ')):fmtCPF(g(de,'CPF')),pags=[...d.getElementsByTagName('detPag')].map(p=>({'01':'Dinheiro','03':'Cartão crédito','04':'Cartão débito','05':'Crédito loja','15':'Boleto','17':'Pix','90':'Sem pagamento'}[g(p,'tPag')]||g(p,'tPag'))+' '+N(g(p,'vPag'))).join(' · ');
+ return `<div class="danfe4">${hom||canc?`<div class="marca">${canc?'CANCELADA':'SEM VALOR FISCAL'}</div>`:''}
+ <table><tr><td colspan="2" style="width:80%"><div class="rt">RECEBEMOS DE ${esc(g(emit,'xNome'))} OS PRODUTOS CONSTANTES DA NOTA FISCAL INDICADA AO LADO. EMISSÃO: ${dh(g(d,'dhEmi'))} DESTINATÁRIO: ${esc(g(de,'xNome'))} VALOR TOTAL: R$ ${N(g(tot,'vNF'))}</div></td><td rowspan="2" style="text-align:center"><b style="font-size:12pt">NF-e</b><br>Nº ${nnf}<br>Série ${ser}</td></tr>
+ <tr>${cx('DATA DE RECEBIMENTO','','width:25%')}${cx('IDENTIFICAÇÃO E ASSINATURA DO RECEBEDOR','')}</tr></table><div class="corte"></div>
+ <table><tr><td style="width:40%" rowspan="3"><b style="font-size:11pt">${esc(g(emit,'xNome'))}</b><br>${esc(g(ee,'xLgr'))}, ${esc(g(ee,'nro'))} - ${esc(g(ee,'xBairro'))}<br>${esc(g(ee,'xMun'))}/${g(ee,'UF')} - CEP ${g(ee,'CEP').replace(/(\d{5})(\d{3})/,'$1-$2')}${g(ee,'fone')?'<br>Fone '+g(ee,'fone'):''}</td>
+  <td style="width:17%;text-align:center" rowspan="3"><b style="font-size:13pt">DANFE</b><div style="font-size:7pt">Documento Auxiliar da Nota Fiscal Eletrônica</div><div style="margin-top:4px">0 - ENTRADA<br>1 - SAÍDA <b style="border:1px solid #000;padding:0 5px">${g(d,'tpNF')}</b></div><b>Nº ${nnf}<br>SÉRIE ${ser}</b><br>Folha 1/1</td>
+  <td>${code128C(f.chave||g(d,'chNFe'))}</td></tr>
+  <tr>${cx('CHAVE DE ACESSO','<b>'+fmtChave(f.chave)+'</b>')}</tr><tr><td style="text-align:center;font-size:7.5pt">Consulta de autenticidade no portal nacional da NF-e www.nfe.fazenda.gov.br/portal ou no site da Sefaz Autorizadora</td></tr></table>
+ <table><tr>${cx('NATUREZA DA OPERAÇÃO',esc(g(d,'natOp')),'width:60%')}${cx('PROTOCOLO DE AUTORIZAÇÃO DE USO',esc(f.nProt)+' - '+dh(f.dh)+' '+hr(f.dh))}</tr></table>
+ <table><tr>${cx('INSCRIÇÃO ESTADUAL',g(emit,'IE'))}${cx('INSC. ESTADUAL DO SUBST. TRIB.','')}${cx('CNPJ',fmtCNPJ(g(emit,'CNPJ')))}</tr></table>
+ <div class="tit">DESTINATÁRIO / REMETENTE</div>
+ <table><tr>${cx('NOME / RAZÃO SOCIAL',esc(g(de,'xNome')),'width:55%')}${cx('CNPJ / CPF',docD)}${cx('DATA DA EMISSÃO',dh(g(d,'dhEmi')))}</tr>
+ <tr>${cx('ENDEREÇO',esc(g(ed,'xLgr')+', '+g(ed,'nro')+(g(ed,'xCpl')?' '+g(ed,'xCpl'):'')))}${cx('BAIRRO / DISTRITO',esc(g(ed,'xBairro')))}${cx('DATA DA SAÍDA',dh(g(d,'dhSaiEnt')))}</tr>
+ <tr>${cx('MUNICÍPIO',esc(g(ed,'xMun')))}${cx('UF',g(ed,'UF'))}${cx('INSCRIÇÃO ESTADUAL',g(de,'IE'))}</tr></table>
+ <table><tr>${cx('CEP',g(ed,'CEP').replace(/(\d{5})(\d{3})/,'$1-$2'))}${cx('FONE',g(ed,'fone'))}${cx('HORA DA SAÍDA',hr(g(d,'dhSaiEnt')))}</tr></table>
+ <div class="tit">PAGAMENTO</div><table><tr><td>${esc(pags)}</td></tr></table>
+ <div class="tit">CÁLCULO DO IMPOSTO</div>
+ <table><tr>${cx('BASE DE CÁLC. DO ICMS',N(g(tot,'vBC')))}${cx('VALOR DO ICMS',N(g(tot,'vICMS')))}${cx('BASE CÁLC. ICMS S.T.',N(g(tot,'vBCST')))}${cx('VALOR DO ICMS SUBST.',N(g(tot,'vST')))}${cx('VALOR TOTAL DOS PRODUTOS',N(g(tot,'vProd')))}</tr>
+ <tr>${cx('VALOR DO FRETE',N(g(tot,'vFrete')))}${cx('VALOR DO SEGURO',N(g(tot,'vSeg')))}${cx('DESCONTO',N(g(tot,'vDesc')))}${cx('OUTRAS DESPESAS',N(g(tot,'vOutro')))}${cx('V. TOT. TRIB.',N(g(tot,'vTotTrib')))}${cx('VALOR TOTAL DA NOTA','<b>'+N(g(tot,'vNF'))+'</b>')}</tr></table>
+ ${+g(tot,'vIPIDevol')?`<table><tr>${cx('VALOR DO IPI DEVOLVIDO',N(g(tot,'vIPIDevol')))}</tr></table>`:''}
+ <div class="tit">TRANSPORTADOR / VOLUMES TRANSPORTADOS</div><table><tr>${cx('FRETE POR CONTA',mf,'width:30%')}${cx('RAZÃO SOCIAL','')}</tr></table>
+ <div class="tit">DADOS DOS PRODUTOS / SERVIÇOS</div>
+ <table class="itens"><thead><tr><th>CÓDIGO</th><th>DESCRIÇÃO</th><th>NCM/SH</th><th>O/CSOSN</th><th>CFOP</th><th>UN</th><th>QUANT.</th><th>V. UNIT.</th><th>V. TOTAL</th><th>DESC.</th><th>BC ICMS</th><th>V. ICMS</th><th>V. IPI</th><th>ALÍQ. ICMS</th></tr></thead><tbody>${dets}</tbody></table>
+ <div class="tit">DADOS ADICIONAIS</div><table><tr><td style="height:22mm;width:65%;vertical-align:top"><div class="rt">INFORMAÇÕES COMPLEMENTARES</div><div style="font-size:7.5pt">${esc(g(d,'infCpl'))}</div></td><td style="vertical-align:top"><div class="rt">RESERVADO AO FISCO</div></td></tr></table></div>`}
+function cceHTML(n,c){return `<div class="danfe4"><h2 style="text-align:center">CARTA DE CORREÇÃO ELETRÔNICA</h2>
+ <table><tr><td><div class="rt">EMITENTE</div><div class="vl">${esc(S.emp.razao||S.emp.nome)} - CNPJ ${esc(fmtCNPJ(S.emp.cnpj||''))}</div></td></tr>
+ <tr><td><div class="rt">NF-e</div><div class="vl">Nº ${n.nfe.nNF} · Série ${n.nfe.serie} · Chave ${fmtChave(n.nfe.chave)}</div></td></tr>
+ <tr><td><div class="rt">DESTINATÁRIO</div><div class="vl">${esc(n.dest.nome)} - ${esc(fmtDoc(n.dest.doc))}</div></td></tr>
+ <tr><td><div class="rt">CARTA Nº / PROTOCOLO / DATA</div><div class="vl">${c.seq} · ${esc(c.nProt)} · ${new Date(c.dh).toLocaleString('pt-BR')}</div></td></tr>
+ <tr><td style="height:40mm;vertical-align:top"><div class="rt">CORREÇÃO</div><div class="vl" style="white-space:pre-wrap">${esc(c.texto)}</div></td></tr>
+ <tr><td style="font-size:7pt">Condições de uso: a Carta de Correção é disciplinada pelo § 1º-A do art. 7º do Convênio S/N, de 15/12/1970, e pode ser usada para corrigir erro na emissão do documento fiscal, desde que o erro não esteja relacionado com: I - as variáveis que determinam o valor do imposto (base de cálculo, alíquota, diferença de preço, quantidade, valor da operação ou da prestação); II - a correção de dados cadastrais que implique mudança do remetente ou do destinatário; III - a data de emissão ou de saída.</td></tr></table></div>`}
+
+/* XMLs do mês: loja e escritório */
+function arqsXML(vendas,notas,mes){const A=[];
+ vendas.filter(v=>v.nfce&&v.nfce.xml&&v.data.startsWith(mes)).forEach(v=>{A.push({nome:'NFCe/'+v.nfce.chave+'-nfce.xml',texto:v.nfce.xml});if(v.nfce.st==='cancelada')A.push({nome:'NFCe/'+v.nfce.chave+'-CANCELADA.txt',texto:'NFC-e cancelada em '+v.nfce.canceladaEm+'. Protocolo: '+(v.nfce.nProtCanc||'')+'. Motivo: '+(v.nfce.just||'')})});
+ notas.filter(n=>n.nfe&&n.nfe.xml&&n.data.startsWith(mes)).forEach(n=>{A.push({nome:'NFe/'+n.nfe.chave+'-nfe.xml',texto:n.nfe.xml});(n.cces||[]).forEach(c=>c.xml&&A.push({nome:'NFe/'+n.nfe.chave+'-CCe'+c.seq+'.xml',texto:c.xml}));
+  if(n.nfe.st==='cancelada')A.push({nome:'NFe/'+n.nfe.chave+'-CANCELADA.txt',texto:'NF-e cancelada em '+n.nfe.canceladaEm+'. Protocolo: '+(n.nfe.nProtCanc||'')+'. Motivo: '+(n.nfe.just||'')})});
+ return A}
+function baixarZip(arqs,nome){if(!arqs.length){toast('Nenhuma nota autorizada nesse mês');return}const a=document.createElement('a');a.href=URL.createObjectURL(zipar(arqs));a.download=nome;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)}
+async function xmlsEscritorio(uid,ano,mes){const m=ano+'-'+pad(mes),e=S.admin.emps.find(x=>x.uid===uid)||{};toast('Juntando as notas…');
+ try{const [v,n]=await Promise.all([API.listVendas(uid,m+'-01'),API.listNotas(uid,m+'-01')]);baixarZip(arqsXML(v,n,m),'XML-'+soDig(e.cnpj||'')+'-'+(e.nome||'cliente').replace(/\W+/g,'_')+'-'+m+'.zip')}
+ catch(x){toast('Não consegui ler as notas: '+errMsg(x))}}
+
+document.addEventListener('click',async ev=>{const t=ev.target.closest('button,a');if(!t)return;const ds=t.dataset;
+ if(t.id==='nenova'){novaNota();return}
+ if(t.id==='nesair'){ev.preventDefault();NT.ed=null;NT.q='';if(location.hash!=='#nfe')location.hash='nfe';else render();return}
+ if(ds.netipo){NT.ed.tipo=ds.netipo;if(ds.netipo==='devolucao'&&NT.ed.dest.indIEDest==='9')NT.ed.dest.indIEDest='1';render();return}
+ if(ds.neadd){const [pid,vid]=ds.neadd.split('|'),p=LJ.prods.find(x=>x.id===pid),v=p&&p.vars.find(x=>x.id===vid);if(!v)return;const i=NT.ed.itens.find(x=>x.pid===pid&&x.vid===vid);
+  if(i)i.qtd=(+i.qtd||0)+1;else NT.ed.itens.push({pid,vid,nome:p.nome,var:descVar(v),qtd:1,preco:NT.ed.tipo==='devolucao'?(+p.custo||precoVar(p,v)):precoVar(p,v),ncm:p.ncm||'',cfop:'',csosn:p.csosn||'102',orig:p.orig||'0',un:p.un||'UN',ean:v.ean||''});NT.q='';render();return}
+ if(t.id==='neavulso'){NT.ed.itens.push({pid:'',vid:'',nome:'',var:'',qtd:1,preco:'',ncm:'',cfop:'',csosn:'102',orig:'0',un:'UN',ean:''});render();return}
+ if(ds.nedel!==undefined){NT.ed.itens.splice(+ds.nedel,1);render();return}
+ if(t.id==='necnpj'){buscarCNPJ();return}
+ if(t.id==='nesalva'){salvarNota(false);return}
+ if(t.id==='neemite'){salvarNota(true);return}
+ if(ds.never){mostrarNota(ds.never);return}
+ if(ds.neemit){emitirNota(ds.neemit);return}
+ if(ds.needit){const n=NT.lista.find(x=>x.id===ds.needit);fecharSheet();NT.ed=JSON.parse(JSON.stringify(n));render();return}
+ if(ds.nedesc){const n=NT.lista.find(x=>x.id===ds.nedesc);fecharSheet();confirmar('Descartar esta nota? Ela some da lista.',async()=>{n.nfe={...(n.nfe||{}),st:'descartada'};await API.saveNota(S.user.uid,n);render()},'Descartar');return}
+ if(ds.neimp){const n=NT.lista.find(x=>x.id===ds.neimp);imprimir(danfeA4(n),'p-a4');return}
+ if(ds.nexml){const n=NT.lista.find(x=>x.id===ds.nexml);baixarArq(n.nfe.chave+'-nfe.xml',n.nfe.xml);return}
+ if(ds.necce){pedirCCe(NT.lista.find(x=>x.id===ds.necce));return}
+ if(t.id==='ccego'){enviarCCe(ds.n,+ds.seq);return}
+ if(ds.necanc){pedirCancNota(NT.lista.find(x=>x.id===ds.necanc));return}
+ if(t.id==='necgo'){cancelarNota(ds.n);return}
+ if(ds.vnfe){const v=LJ.vendas.find(x=>x.id===ds.vnfe);fecharSheet();if(v)notaDeVenda(v);return}
+ if(ds.admxml){xmlsEscritorio(S.admin.sel,S.ano,S.mes);return}
+});
+document.addEventListener('input',ev=>{const el=ev.target;
+ if(el.id==='neq'){NT.q=el.value;const p=el.selectionStart;render();const i=$('#neq');if(i){i.focus();i.setSelectionRange(p,p)}return}
+ if(el.dataset&&el.dataset.nf&&NT.ed){let v=el.value;if(el.dataset.num!==undefined){const x=parseValor(v);v=v.trim()===''?'':(isFinite(x)?x:0)}if(el.dataset.nf==='dest.doc')v=soDig(v);setPath(NT.ed,el.dataset.nf,v);
+  if(el.dataset.nf==='dest.mun')NT.ed.dest.cMun='';
+  if(el.id==='necep'&&soDig(v).length===8)buscarCEP(soDig(v));
+  if(el.dataset.nf==='dest.doc'){const x=destinos().find(y=>soDig(y.doc)===v&&v.length>=11);if(x){NT.ed.dest={...novaNotaDest(),...x};render()}}
+  const tt=$('#netot');if(tt)tt.innerHTML=totHTML(totNota(NT.ed))}});
+document.addEventListener('change',ev=>{const el=ev.target;if(!(el.dataset&&el.dataset.nfr&&NT.ed))return;setPath(NT.ed,el.dataset.nfr,el.type==='checkbox'?el.checked:el.value);
+ if(el.dataset.nfr==='dest.uf')NT.ed.dest.cMun='';render()});
+
+if(typeof DEMO!=='undefined'&&DEMO)window.__jm={get S(){return S},get LJ(){return LJ},get NT(){return NT}};
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
- const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda']:[])].includes(h)?h:'inicio';
- $('#app').innerHTML=({vender:vVender,produtos:vProdutos,vendas:vVendas,mais:vMais,inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda','nfce','nfe']:[])].includes(h)?h:'inicio';
+ $('#app').innerHTML=({vender:vVender,produtos:vProdutos,vendas:vVendas,mais:vMais,nfce:vNFCe,nfe:vNFe,inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  if(S.tab==='vender')focoPDV();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
