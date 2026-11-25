@@ -108,6 +108,28 @@ table.adm td{padding:10px 8px;border-bottom:1px solid var(--line)}
 @media(max-width:700px){.kp{grid-template-columns:repeat(2,minmax(0,1fr))}.cv{grid-template-columns:minmax(0,1fr)!important}
 .stk thead{display:none}.stk tr{display:grid;padding:8px 0;border-bottom:1px solid var(--line)}.stk td{border:0;padding:2px 0;text-align:left}}
 @media (prefers-reduced-motion:no-preference){.sheet.on .box{animation:up .22s ease-out}@keyframes up{from{transform:translateY(40px);opacity:.6}to{transform:none;opacity:1}}}
+
+.pdv{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.prods{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
+.prod{text-align:left;height:auto;padding:12px;display:flex;flex-direction:column;gap:4px;border-radius:14px;font-weight:400}
+.prod b{font-size:15px;line-height:1.25}.prod .pr{font-family:Poppins;font-weight:600;font-size:17px}.prod small{color:var(--mut);font-size:13px}.prod small.neg{color:var(--out)}
+.cart{position:sticky;top:14px;margin-top:0}
+.ci{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.qty{display:flex;gap:6px;align-items:center;justify-content:flex-end}.qty button{min-height:36px;width:36px;padding:0}
+.tot{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin:14px 0}.tot .big{font-family:Poppins;font-size:30px;font-weight:700;white-space:nowrap}
+.grade{display:grid;gap:6px;align-items:center;text-align:center}.grade button{min-height:52px;padding:0;font-size:17px}.grade button.zero{opacity:.55}
+table.vt{width:100%;border-collapse:collapse;font-size:14px}table.vt th{text-align:left;color:var(--mut);font-size:13px;padding:6px 4px}table.vt td{padding:4px}
+.cupom-tela{background:#fffdf7;color:#111;border-radius:8px;padding:14px;font:13px/1.45 "Courier New",monospace;max-width:340px;margin:0 auto}
+.cupom hr{border:0;border-top:1px dashed #888;margin:6px 0}.cupom .r{display:flex;justify-content:space-between;gap:8px}
+#printarea{display:none}
+@media print{body>*:not(#printarea){display:none!important}#printarea{display:block;color:#000}
+ #printarea.p-cupom{width:72mm;font:11px/1.35 "Courier New",monospace}
+ .etqs{display:grid;grid-template-columns:repeat(3,1fr);gap:2mm}.etq{border:1px dashed #999;padding:2mm;break-inside:avoid;font:9px/1.2 Arial,sans-serif}.etq .en{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.etq .ep{font-size:12px;font-weight:700;text-align:right}}
+.wrap:has(.pdv),.wrap:has(.prodlist){max-width:1180px}
+.pdvbar{display:none}
+@media(max-width:820px){.pdv{grid-template-columns:minmax(0,1fr)}.cart{position:static;margin-top:14px}
+ .pdvbar{display:flex;position:fixed;left:8px;right:8px;bottom:calc(74px + env(safe-area-inset-bottom));z-index:6;background:var(--navy);color:#fff;border-radius:16px;padding:8px 8px 8px 16px;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 8px 24px #0004}
+ .pdvbar b{font-family:Poppins;font-size:18px}.pdvbar button{min-height:46px;background:var(--gold);border-color:var(--gold);color:#fff}.wrap:has(.pdvbar){padding-bottom:170px}}
 </style>
 </head>
 <body>
@@ -163,6 +185,24 @@ const mem={};
 const demoStore={
  get(k,d){return k in mem?mem[k]:(mem[k]=LS.get(k,d))},
  set(k,v){mem[k]=v;LS.set(k,v)}};
+function seedLoja(){if(demoStore.get('pr_demo-conceito',null))return;const u='demo-conceito',H=hoje();
+ demoStore.set('emp_'+u,{uid:u,nome:'Conceito Store (exemplo)',razao:'CONCEITO STORE LTDA',email:'conceito@exemplo.com',tipo:'comercio',ramo:'loja',lojaPDV:true,mei:false,cnpj:'66777888000181',cnpjConferido:true,cidade:'Ivinhema',uf:'MS',abertura:'2025-09',dasLembrete:true,dicas:{inicio:true},criadoEm:H,seqVenda:6});
+ let e=0;const ean=()=>{const b='2'+String(7890000000+(e++)).padStart(11,'0');return b+eanCheck(b)};
+ const mk=(id,nome,ref,cat,preco,custo,ncm,tams,cores,est)=>({id,nome,ref,cat,preco,custo,ncm,cfop:'5102',csosn:'102',orig:'0',un:'UN',ativo:true,vars:cores.flatMap((c,ci)=>tams.map((t,ti)=>({id:id+'v'+ci+ti,tam:t,cor:c,est:est(ti,ci),ean:ean()})))});
+ const P=[mk('p1','Camiseta básica algodão','CB-01','Camisetas',59.9,24,'61091000',['P','M','G','GG'],['Preto','Branco','Off-white'],(t,c)=>[3,6,5,2][t]-c),
+  mk('p2','Calça jeans feminina','CJ-22','Calças',149.9,68,'62046200',['36','38','40','42','44'],['Azul escuro'],t=>[2,4,4,3,1][t]),
+  mk('p3','Moletom canguru','MC-07','Moletons',189.9,82,'61102000',['P','M','G'],['Cinza','Preto'],(t,c)=>[2,3,1][t]+c),
+  mk('p4','Tênis esportivo running','TR-40','Calçados',299.9,150,'64041100',['37','38','39','40','41','42'],['Preto/branco'],t=>[1,2,3,2,1,0][t]),
+  mk('p5','Perfume Conceito 100 ml','PF-100','Perfumaria',129.9,55,'33030020',['Único'],['Único'],()=>8),
+  mk('p6','Boné aba curva','BN-03','Acessórios',69.9,28,'',['Único'],['Preto','Bege'],(t,c)=>[4,2][c])];
+ demoStore.set('pr_'+u,P);
+ const V=[[1,'09:12',[['p1','p1v10',2,59.9]],[['Pix',119.8]],''],[2,'10:40',[['p2','p2v01',1,149.9],['p6','p6v00',1,69.9]],[['Crédito',219.8]],'Ana Paula'],
+  [3,'11:05',[['p5','p5v00',1,129.9]],[['Dinheiro',129.9]],''],[4,'08:05',[['p4','p4v02',1,299.9]],[['Crediário',299.9]],'Cláudia Ribeiro'],[5,'08:20',[['p3','p3v11',1,189.9]],[['Débito',100],['Pix',89.9]],''],[6,'08:41',[['p1','p1v02',1,59.9]],[['Pix',59.9]],'']];
+ demoStore.set('vd_'+u,V.map(([num,hora,its,pags,cli],i)=>{const itens=its.map(([pid,vid,qtd,preco])=>{const p=P.find(x=>x.id===pid),v=p.vars.find(x=>x.id===vid);return{pid,vid,nome:p.nome,var:descVar(v),qtd,preco,ean:v.ean}});const t=itens.reduce((s,x)=>s+x.qtd*x.preco,0);
+  return{id:'vd'+num,num,data:i<3?addDia(H,-1):H,hora,itens,sub:t,desconto:0,total:Math.round(t*100)/100,pags:pags.map(([forma,valor])=>({forma,valor})),troco:0,cli,fone:cli?'6799990000'+num:'',canal:'loja',lancs:[],credId:null,nfce:{st:'pendente'}}}));
+ demoStore.set('lanc_'+u,V.flatMap(([num,,,pags],i)=>pags.filter(p=>p[0]!=='Crediário').map(([forma,valor],j)=>({id:'lv'+num+j,tipo:'in',cat:'venda',valor,forma,nota:false,desc:'Venda nº '+num,data:i<3?addDia(H,-1):H}))));
+ demoStore.set('cr_'+u,[{id:'cc1',cli:'Cláudia Ribeiro',fone:'67999900004',desc:'Venda nº 4: 1 Tênis esportivo running',total:299.9,valor:299.9,entrada:0,data:H,parcelas:[1,2,3].map(n=>({n,venc:addMes(addDia(H,30),n-1),valor:n<3?99.97:99.96,pago:false})),venda:4}]);
+}
 function seedDemo(){
  if(demoStore.get('seeded',false)&&(demoStore.get('emp_demo-oficina',{})||{}).cnpj)return;
  const y=new Date().getFullYear(),m=new Date().getMonth()+1;
@@ -200,7 +240,7 @@ function seedDemo(){
 }
 const API={
  async init(){
-  if(DEMO){seedDemo();return}
+  if(DEMO){seedDemo();seedLoja();return}
   const v='10.12.5',base='https://www.gstatic.com/firebasejs/'+v+'/';
   for(const f of ['firebase-app-compat.js','firebase-auth-compat.js','firebase-firestore-compat.js'])await new Promise((ok,no)=>{const s=document.createElement('script');s.src=base+f;s.onload=ok;s.onerror=()=>no(new Error('Sem conexão com o servidor'));document.head.appendChild(s)});
   fb=window.firebase;fb.initializeApp(FIREBASE_CONFIG);auth=fb.auth();auth.languageCode='pt';db=fb.firestore();
@@ -273,6 +313,13 @@ const API={
   if(DEMO){demoStore.set('os_'+uid,demoStore.get('os_'+uid,[]).map(x=>x.id===id?{...x,...o}:x));return}
   await db.collection('empresas').doc(uid).collection('os').doc(id).update(o)},
  async delOS(uid,id){if(DEMO){demoStore.set('os_'+uid,demoStore.get('os_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('os').doc(id).delete()},
+ async listProd(uid){if(DEMO)return demoStore.get('pr_'+uid,[]);const q=await db.collection('empresas').doc(uid).collection('prod').get();return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async saveProd(uid,p){const {id,...d}=p;if(DEMO){const L=demoStore.get('pr_'+uid,[]);if(id){demoStore.set('pr_'+uid,L.map(x=>x.id===id?{...d,id}:x));return {...d,id}}const n={...d,id:'p'+Date.now()+Math.floor(Math.random()*99)};L.push(n);demoStore.set('pr_'+uid,L);return n}
+  const col=db.collection('empresas').doc(uid).collection('prod');if(id){await col.doc(id).set(d);return {...d,id}}const r=await col.add(d);return {...d,id:r.id}},
+ async listVendas(uid,de){if(DEMO)return demoStore.get('vd_'+uid,[]).filter(v=>v.data>=de);const q=await db.collection('empresas').doc(uid).collection('vendas').where('data','>=',de).get();return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async addVenda(uid,v){if(DEMO){const L=demoStore.get('vd_'+uid,[]);const n={...v,id:'v'+Date.now()};L.push(n);demoStore.set('vd_'+uid,L);return n}
+  const r=await db.collection('empresas').doc(uid).collection('vendas').add({...v,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...v,id:r.id}},
+ async updVenda(uid,id,v){if(DEMO){demoStore.set('vd_'+uid,demoStore.get('vd_'+uid,[]).map(x=>x.id===id?{...x,...v}:x));return}await db.collection('empresas').doc(uid).collection('vendas').doc(id).update(v)},
  async listEmps(){
   if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
    return ks.filter((k,i,a)=>k.startsWith('emp_')&&a.indexOf(k)===i).map(k=>demoStore.get(k,null)).filter(Boolean)}
@@ -332,7 +379,7 @@ function telaLogin(modo='entrar',msg=''){
    ${msg}
    <button class="pri w" type="submit">${t[1]}</button>
   </form>
-  ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-loja">Loja de roupas</button><button data-demoent="demo-mei">Salão / estética</button><button data-demoent="demo-barba">Barbearia</button><button data-demoent="demo-oficina">Oficina</button></div></div>`:''}
+  ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-conceito">Loja completa: caixa, produtos e estoque</button><button data-demoent="demo-loja">Loja de roupas (crediário)</button><button data-demoent="demo-mei">Salão / estética</button><button data-demoent="demo-barba">Barbearia</button><button data-demoent="demo-oficina">Oficina</button></div></div>`:''}
   <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:10px">
    ${modo!=='entrar'?'<button class="lnk" data-modo="entrar">Já tenho acesso</button>':'<button class="lnk" data-modo="criar">Primeiro acesso</button>'}
    ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}
@@ -427,6 +474,10 @@ async function obNext(){
 
 /* ===================== APP DO CLIENTE ===================== */
 const IC={
+ vender:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20 8H6.2"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>',
+ produtos:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="8" cy="8" r="1.5"/></svg>',
+ mais:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+ cam:'<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>',
  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
  extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
  relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
@@ -435,7 +486,7 @@ const IC={
  fiado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
  agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
-function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os','OS']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['clientes','Clientes'],['extrato','Extrato'],['relatorio','Relatório'],...((usaAgenda()?1:0)+(usaOS()?1:0)+(usaCred()?1:0)>=2?[]:[['ajuda','Ajuda']])]}
+function abas(){if(usaLoja())return [['inicio','Início'],['vender','Vender'],['produtos','Produtos'],['fiado','Crediário'],['clientes','Clientes'],['mais','Mais']];return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os','OS']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['clientes','Clientes'],['extrato','Extrato'],['relatorio','Relatório'],...((usaAgenda()?1:0)+(usaOS()?1:0)+(usaCred()?1:0)>=2?[]:[['ajuda','Ajuda']])]}
 function shell(inner){
  return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><div style="display:flex;gap:8px">${abas().some(t=>t[0]==='ajuda')?'':'<a href="#ajuda" class="hbtn" aria-label="Ajuda">?</a>'}<button id="sair">Sair</button></div></div></header>
  <main class="wrap">${inner}</main>
@@ -453,6 +504,7 @@ function vInicio(){
  <div class="card saldo"><div class="l">Saldo de ${MESES[new Date().getMonth()]}</div><div class="big">${brl(ent-sai)}</div>
   <div class="row"><span>Entrou <b>${brl(ent)}</b></span><span>Saiu <b>${brl(sai)}</b></span></div></div>
  <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
+ ${blocoLojaInicio()}
  ${(()=>{if(!usaAgenda())return'';const L=doDia(hoje()).filter(a=>a.status!=='faltou');const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
  ${usaCred()?(()=>{const r=resumoCred();return `<a href="#fiado" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Crediário</b><div class="mut">${r.rec?brl(r.rec)+' a receber'+(r.atr?' · <b style="color:var(--out)">'+brl(r.atr)+' atrasado</b>':''):'Ninguém devendo'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
  ${S.emp.cnpj?'':`<div class="card" style="border-color:var(--gold)"><h3>Complete seu cadastro</h3><p class="mut" style="margin:4px 0 10px">Falta o CNPJ da empresa. A gente busca o resto na Receita.</p><button class="pri w" id="abredados">Informar CNPJ</button></div>`}
@@ -462,10 +514,10 @@ function vInicio(){
  ${S.emp.dasLembrete?`<div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
   <div style="flex:1 1 220px"><h3>Imposto do mês (DAS)</h3><p class="mut" style="margin:4px 0 0">${das.txt}</p></div>
   ${das.st==='ok'?'<span class="pill p-in">Pago</span>':`<button data-das="1">Já paguei</button>`}</div>`:''}
- <div class="card"><h3>Limite do MEI em ${new Date().getFullYear()}</h3>
+ ${S.emp.mei===false?`<div class="card"><h3>Faturamento em ${new Date().getFullYear()}</h3><div class="v" style="font-size:24px;margin-top:4px">${brl(fatAno)}</div><p class="mut" style="margin:6px 0 0">Empresa do Simples Nacional: o escritório acompanha a faixa e calcula o DAS.</p></div>`:`<div class="card"><h3>Limite do MEI em ${new Date().getFullYear()}</h3>
   <div class="bar"><i class="${pc>=100?'over':pc>=80?'hi':''}" style="width:${pc}%"></i></div>
   <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span class="v">${brl(fatAno)}</span><span class="mut">de ${brl(lim.valor)}${lim.prop?' (proporcional a '+lim.meses+' meses)':''}</span></div>
-  <p class="mut" style="margin:8px 0 0">${msgLim}</p></div>
+  <p class="mut" style="margin:8px 0 0">${msgLim}</p></div>`}
  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Últimos lançamentos</h3><a href="#extrato" class="lnk" style="font-size:14px">Ver tudo</a></div>
   ${ult.length?ult.map(itemLanc).join(''):'<p class="mut">Nada lançado ainda. Toque em <b>Recebi</b> quando entrar o primeiro dinheiro.</p>'}</div>`)}
 
@@ -507,7 +559,7 @@ function vAjuda(){ setTimeout(()=>{const m=$('main');if(m&&!$('#mudaramo')){m.in
  ${WHATSAPP?`<a class="card" style="display:block;text-decoration:none;color:inherit" href="https://wa.me/55${esc(WHATSAPP)}"><h3>Falar com o escritório no WhatsApp</h3><p class="mut" style="margin:4px 0 0">(${esc(WHATSAPP.slice(0,2))}) ${esc(WHATSAPP.slice(2))}</p></a>`:''}
  <div class="card"><h3>Meus dados</h3><p class="mut" style="margin:6px 0 0">${S.emp.cnpj?'CNPJ '+esc(fmtCNPJ(S.emp.cnpj))+(S.emp.razao?' · '+esc(S.emp.razao):'')+'<br>':'<b style="color:var(--out)">CNPJ não informado</b><br>'}${esc(S.emp.nome)} · ${({servico:'Presta serviço',comercio:'Vende produtos',ambos:'Vende e presta serviço'})[S.emp.tipo]} · MEI desde ${esc((S.emp.abertura||'').split('-').reverse().join('/'))}</p>
   <label style="margin-top:12px;flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" id="daschk" style="width:24px;min-height:24px" ${S.emp.dasLembrete?'checked':''}> Mostrar lembrete do DAS</label>
-  <button id="abredados" style="margin-top:10px">${S.emp.cnpj?'Editar dados da empresa':'Informar CNPJ'}</button><br><button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
+  <button id="abredados" style="margin-top:10px">${S.emp.cnpj?'Editar dados da empresa':'Informar CNPJ'}</button><br><button class="lnk" id="lojaon" style="margin-top:6px">${S.emp.lojaPDV?'Desligar a Loja completa (caixa e estoque)':'Ligar a Loja completa: caixa, produtos e estoque'}</button><br><button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
  <p class="mut" style="text-align:center">JM Gestão+ · versão piloto · JM Gestão Contábil e Perícias</p>`)}
 
 /* ===================== LANÇAMENTO ===================== */
@@ -535,7 +587,7 @@ async function salvarLanc(){
  const b=$('#salvar');b.disabled=true;
  try{const n=await API.addLanc(S.user.uid,l);if(l.data.startsWith(S.ano+'-'))S.lanc.push(n);fecharSheet();render();toast((s.tipo==='in'?'Recebimento':'Pagamento')+' de '+brl(v)+' salvo!')}
  catch(err){b.disabled=false;e(esc(errMsg(err)))}}
-function fecharSheet(){$('#sheet').classList.remove('on');S.sh=null}
+function fecharSheet(){pararCamera();$('#sheet').classList.remove('on');S.sh=null}
 function confirmar(txt,acao,rotulo='Apagar'){
  S.sh=null;$('#sbox').innerHTML=`<h2>${txt}</h2>${rotulo==='Desfazer'?'<p class="mut">A OS volta para "Pronto".</p>':'<p class="mut">Não dá para desfazer.</p>'}<div class="acts"><button id="shx">Cancelar</button><button class="dk" id="cfok" style="background:var(--out);border-color:var(--out)">${rotulo}</button></div>`;
  $('#sheet').classList.add('on');$('#cfok').onclick=async()=>{fecharSheet();await acao()}}
@@ -995,13 +1047,241 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button,a')
   confirmar('Tirar '+c.nome+' da lista?'+(tem?' Os atendimentos e o crediário continuam guardados.':''),async()=>{let L=cadCli().filter(x=>chaveNome(x.nome)!==k);if(tem)L.push({nome:c.nome,fone:c.fone||'',oculto:true,ocultoEm:hoje()});try{await salvarCadCli(L);render();toast('Cliente tirado da lista')}catch(err){toast(errMsg(err))}},'Tirar');return}});
 document.addEventListener('input',e=>{if(e.target.id==='clbusca'){CL.busca=e.target.value;const p=e.target.selectionStart;render();const i=$('#clbusca');if(i){i.focus();i.setSelectionRange(p,p)}}});
 
+/* ===================== LOJA COMPLETA: produtos com grade, estoque, PDV ===================== */
+const LJ={prods:[],vendas:[],ok:false,cart:[],q:'',pq:'',desc:'',pg:null,cli:'',fone:'',cam:null};
+const usaLoja=()=>!!(S.emp&&S.emp.lojaPDV);
+const FORMAS_PDV=['Dinheiro','Pix','Débito','Crédito','Crediário'];
+const GRADES={roupa:['PP','P','M','G','GG','XG'],num:['34','36','38','40','42','44','46'],calc:['33','34','35','36','37','38','39','40','41','42','43','44'],inf:['2','4','6','8','10','12','14','16'],unico:['Único']};
+const NCMS=[['6109.10.00','Camiseta / regata de malha de algodão'],['6110.20.00','Moletom, suéter, blusa de frio de algodão'],['6203.42.00','Calça / bermuda masculina de algodão (jeans)'],['6204.62.00','Calça / bermuda feminina de algodão (jeans)'],['6204.42.00','Vestido de algodão'],['6404.11.00','Tênis esportivo (sola de borracha, parte de cima têxtil)'],['6403.99.90','Calçado de couro (outros)'],['6402.99.90','Calçado de borracha ou plástico (chinelo, sandália)'],['3303.00.20','Perfume / água-de-colônia'],['3304.99.90','Cosmético / maquiagem / creme'],['9506.62.00','Bola inflável (artigo esportivo)']];
+const estTot=p=>(p.vars||[]).reduce((s,v)=>s+(+v.est||0),0);
+const descVar=v=>[v.tam,v.cor].filter(x=>x&&x!=='Único').join(' / ');
+const precoVar=(p,v)=>+(v&&v.preco||p.preco||0);
+function eanCheck(d12){let s=0;for(let i=0;i<12;i++)s+=(+d12[i])*(i%2?3:1);return (10-s%10)%10}
+function novoEAN(usados){let c;do{const b='2'+String(Date.now()).slice(-7)+String(Math.floor(Math.random()*1e4)).padStart(4,'0');c=b+eanCheck(b)}while(usados.has(c));usados.add(c);return c}
+const EAN_L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+const EAN_R=EAN_L.map(s=>[...s].map(c=>c==='0'?'1':'0').join(''));
+const EAN_G=EAN_R.map(s=>[...s].reverse().join(''));
+const EAN_P=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+function eanSVG(c){if(!/^\d{13}$/.test(c||''))return '';const d=[...c].map(Number),p=EAN_P[d[0]];let b='101';for(let i=1;i<7;i++)b+=(p[i-1]==='L'?EAN_L:EAN_G)[d[i]];b+='01010';for(let i=7;i<13;i++)b+=EAN_R[d[i]];b+='101';
+ let r='';for(let i=0;i<b.length;i++)if(b[i]==='1')r+=`<rect x="${i+7}" y="0" width="1" height="${(i<3||i>=92||(i>=45&&i<50))?46:40}"/>`;
+ return `<svg viewBox="0 0 109 54" width="100%" xmlns="http://www.w3.org/2000/svg" fill="#000">${r}<text x="2" y="53" font-size="8" font-family="monospace">${c[0]}</text><text x="15" y="53" font-size="8" font-family="monospace" textLength="38">${c.slice(1,7)}</text><text x="61" y="53" font-size="8" font-family="monospace" textLength="38">${c.slice(7)}</text></svg>`}
+function imprimir(html,tipo){let a=$('#printarea');if(!a){a=document.createElement('div');a.id='printarea';document.body.appendChild(a)}a.className=tipo;a.innerHTML=html;
+ try{window.print()}catch(e){toast('Impressão indisponível aqui')}}
+async function carregarLoja(){if(!S.user||S.isAdmin||!usaLoja())return;try{const [p,v]=await Promise.all([API.listProd(S.user.uid),API.listVendas(S.user.uid,addDia(hoje(),-90))]);LJ.prods=p;LJ.vendas=v;LJ.ok=true}catch(e){LJ.ok=false}}
+const vendasDia=d=>LJ.vendas.filter(v=>v.data===d&&!v.cancelada);
+const totCart=()=>{const sub=LJ.cart.reduce((s,i)=>s+i.qtd*i.preco,0);const dtx=String(LJ.desc||'').trim();let d=0;if(dtx.endsWith('%'))d=sub*(parseValor(dtx.slice(0,-1))||0)/100;else d=parseValor(dtx)||0;d=Math.min(Math.max(0,Math.round(d*100)/100),sub);return{sub,desc:d,tot:Math.round((sub-d)*100)/100}};
+
+/* ---------- Início ---------- */
+function blocoLojaInicio(){if(!usaLoja())return'';const V=vendasDia(hoje()),t=V.reduce((s,v)=>s+v.total,0);
+ const baixo=LJ.prods.filter(p=>p.ativo!==false).flatMap(p=>(p.vars||[]).filter(v=>(+v.est||0)<=1).map(v=>({p,v}))).slice(0,6);
+ return `<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h3>Vendas de hoje</h3><div class="mut">${V.length} venda(s)${V.length?' · ticket médio '+brl(t/V.length):''}</div></div><div class="v" style="font-size:24px">${brl(t)}</div></div>
+  <a href="#vender" class="pri" style="display:flex;align-items:center;justify-content:center;min-height:54px;border-radius:12px;margin-top:12px;text-decoration:none;font-weight:700;font-size:18px">Abrir o caixa</a>
+  ${V.length?`<div style="margin-top:10px">${[...V].reverse().slice(0,4).map(itemVenda).join('')}</div><a href="#vendas" class="lnk" style="font-size:14px">Ver todas as vendas</a>`:''}</div>
+  ${baixo.length?`<a href="#produtos" class="card" style="display:block;text-decoration:none;color:inherit"><b>Estoque acabando</b><div class="mut">${baixo.map(({p,v})=>esc(p.nome+(descVar(v)?' '+descVar(v):''))+': '+(+v.est||0)).join(' · ')}</div></a>`:''}`}
+function itemVenda(v){const nf=v.nfce||{};return `<button class="li" data-vver="${esc(v.id)}" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:10px 0;min-height:0;font-weight:400">
+ <div><b>Nº ${v.num}</b> · ${esc(v.hora||'')} ${v.cli?'· '+esc(v.cli):''}<div class="d">${esc(v.itens.map(i=>i.qtd+'× '+i.nome).join(', ')).slice(0,90)} · ${esc(v.pags.map(p=>p.forma).join(' + '))}</div></div>
+ <div style="text-align:right"><div class="v ${v.cancelada?'':'in'}" style="${v.cancelada?'text-decoration:line-through;color:var(--mut)':''}">${brl(v.total)}</div>${v.cancelada?'<span class="pill p-out">cancelada</span>':nf.st==='autorizada'?'<span class="pill p-in">NFC-e</span>':'<span class="pill p-w">sem nota</span>'}</div></button>`}
+
+/* ---------- PDV ---------- */
+function buscaProd(q){const k=chaveNome(q),dg=soDig(q);const A=LJ.prods.filter(p=>p.ativo!==false);if(!k)return A.slice(0,30);
+ return A.filter(p=>chaveNome(p.nome).includes(k)||chaveNome(p.ref||'').includes(k)||chaveNome(p.cat||'').includes(k)||(dg.length>=4&&(p.vars||[]).some(v=>(v.ean||'').includes(dg)))).slice(0,30)}
+function vVender(){const T=totCart(),R=buscaProd(LJ.q);
+ return shell(`<div class="pdv">
+ <div><div style="display:flex;gap:8px"><input id="pdvq" type="search" value="${esc(LJ.q)}" placeholder="Bipe o código ou digite o produto" autocomplete="off" style="min-height:56px;font-size:18px" aria-label="Buscar produto">${'BarcodeDetector' in window?'<button id="pdvcam" aria-label="Ler código com a câmera" style="flex:none;width:56px;min-height:56px;padding:0">'+IC.cam+'</button>':''}</div>
+  <div class="prods">${R.length?R.map(p=>`<button class="prod" data-padd="${esc(p.id)}"><b>${esc(p.nome)}</b><span class="mut" style="font-size:13px">${esc([p.ref,(p.vars||[]).length>1?(p.vars.length+' variações'):''].filter(Boolean).join(' · '))}</span><span class="pr">${brl(p.preco)}</span><small class="${estTot(p)<=0?'neg':''}">${estTot(p)} em estoque</small></button>`).join('')
+   :`<p class="mut">${LJ.prods.length?'Nenhum produto encontrado.':'Nenhum produto cadastrado ainda. <a href="#produtos" class="lnk">Cadastrar produtos</a>'}</p>`}</div></div>
+ <div class="card cart" id="cart"><div style="display:flex;justify-content:space-between;align-items:center"><h2>Venda atual</h2>${LJ.cart.length?'<button class="lnk" id="pdvlimpa">Limpar</button>':''}</div>
+  ${LJ.cart.length?LJ.cart.map((i,ix)=>`<div class="ci"><div><b>${esc(i.nome)}</b>${i.var?`<div class="d mut">${esc(i.var)}</div>`:''}<div class="d mut">${brl(i.preco)} cada</div></div>
+   <div style="text-align:right"><div class="qty"><button data-pq="${ix}|-1" aria-label="Menos">−</button><b>${i.qtd}</b><button data-pq="${ix}|1" aria-label="Mais">+</button></div><div class="v" style="margin-top:4px">${brl(i.qtd*i.preco)}</div></div></div>`).join('')
+   :'<p class="mut" style="text-align:center;padding:20px 0">Bipe um código de barras ou toque num produto.</p>'}
+  <label style="margin-top:12px">Desconto (R$ ou %)<input id="pdvdesc" inputmode="decimal" value="${esc(LJ.desc)}" placeholder="Ex.: 10 ou 5%"></label>
+  <div class="tot"><span>Total${T.desc?` <small class="mut">(${brl(T.sub)} − ${brl(T.desc)})</small>`:''}</span><span class="big">${brl(T.tot)}</span></div>
+  <button class="pri w" id="pdvpagar" style="min-height:58px;font-size:19px" ${LJ.cart.length?'':'disabled'}>Receber pagamento</button></div></div>
+ ${LJ.cart.length?`<div class="pdvbar"><a href="#cart" style="color:#fff;text-decoration:none"><small>${(n=>n+(n>1?' itens':' item'))(LJ.cart.reduce((a,i)=>a+i.qtd,0))} · ver</small><br><b>${brl(T.tot)}</b></a><button id="pdvpagar2">Receber</button></div>`:''}`)}
+function addCarrinho(p,v,qtd=1){const k=p.id+'|'+v.id,i=LJ.cart.find(x=>x.k===k);
+ if(i)i.qtd+=qtd;else LJ.cart.push({k,pid:p.id,vid:v.id,nome:p.nome,var:descVar(v),qtd,preco:precoVar(p,v),ean:v.ean||''});
+ if((+v.est||0)-(i?i.qtd:qtd)<0)toast('Atenção: '+p.nome+(descVar(v)?' '+descVar(v):'')+' está sem estoque no sistema');}
+function escolherVar(p){if((p.vars||[]).length===1){addCarrinho(p,p.vars[0]);fecharSheet();LJ.q='';render();focoPDV();return}
+ const tams=[...new Set(p.vars.map(v=>v.tam))],cores=[...new Set(p.vars.map(v=>v.cor))];
+ sheetOS(`<div class="hd"><h2>${esc(p.nome)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><p class="mut" style="margin:0 0 10px">Escolha o tamanho e a cor. O número é o estoque.</p>
+  <div class="grade" style="grid-template-columns:auto repeat(${tams.length},minmax(0,1fr))"><span></span>${tams.map(t=>`<b>${esc(t)}</b>`).join('')}
+  ${cores.map(c=>`<b style="text-align:left">${esc(c)}</b>${tams.map(t=>{const v=p.vars.find(x=>x.tam===t&&x.cor===c);return v?`<button data-pvar="${esc(p.id)}|${esc(v.id)}" class="${(+v.est||0)<=0?'zero':''}">${+v.est||0}</button>`:'<span></span>'}).join('')}`).join('')}</div>`)}
+function focoPDV(){setTimeout(()=>{const i=$('#pdvq');if(i&&matchMedia('(pointer:fine)').matches)i.focus()},30)}
+function lerCodigo(code){code=soDig(code);if(code.length<4)return false;for(const p of LJ.prods){const v=(p.vars||[]).find(x=>x.ean===code);if(v){addCarrinho(p,v);LJ.q='';render();focoPDV();toast(p.nome+(descVar(v)?' '+descVar(v):'')+' adicionado');return true}}return false}
+async function abrirCamera(){if(!('BarcodeDetector' in window))return;let st;try{st=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})}catch(e){toast('Não deu para abrir a câmera');return}
+ sheetOS(`<div class="hd"><h2>Ler código de barras</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><video id="camv" playsinline muted style="width:100%;border-radius:12px;background:#000"></video><p class="mut">Aponte para a etiqueta.</p>`);
+ const vid=$('#camv');vid.srcObject=st;await vid.play();const det=new BarcodeDetector({formats:['ean_13','ean_8','code_128']});LJ.cam=st;
+ const loop=async()=>{if(LJ.cam!==st)return;try{const r=await det.detect(vid);if(r[0]){const c=r[0].rawValue;pararCamera();fecharSheet();if(!lerCodigo(c))toast('Código '+c+' não cadastrado');return}}catch(e){}requestAnimationFrame(loop)};loop()}
+function pararCamera(){if(LJ.cam){LJ.cam.getTracks().forEach(t=>t.stop());LJ.cam=null}}
+
+/* ---------- Pagamento ---------- */
+function abrirPagamento(){const T=totCart();LJ.pg={pags:[{forma:'Dinheiro',valor:T.tot}],rec:'',n:'1',venc:addDia(hoje(),30),cli:LJ.cli,fone:LJ.fone};renderPag()}
+function renderPag(){const g=LJ.pg,T=totCart(),soma=g.pags.reduce((s,p)=>s+(+p.valor||0),0),din=g.pags.find(p=>p.forma==='Dinheiro'),cr=g.pags.find(p=>p.forma==='Crediário');
+ const troco=din&&g.rec?Math.max(0,parseValor(g.rec)-din.valor):0,falta=Math.round((T.tot-soma)*100)/100;
+ sheetOS(`<div class="hd"><h2>Receber ${brl(T.tot)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  ${g.pags.map((p,ix)=>`<div class="grp" style="margin-top:${ix?14:0}px"><div class="t">${g.pags.length>1?(ix+1)+'ª forma':'Forma de pagamento'}</div><div class="chips">${FORMAS_PDV.map(f=>`<button class="chip ${p.forma===f?'on':''}" data-pgf="${ix}|${f}">${f}</button>`).join('')}</div>
+   ${g.pags.length>1?`<div style="display:flex;gap:8px;align-items:end;margin-top:8px"><label style="flex:1">Valor<input data-pgv="${ix}" inputmode="decimal" value="${String(p.valor).replace('.',',')}"></label><button class="x" data-pgdel="${ix}" aria-label="Remover forma" style="height:50px;width:50px">×</button></div>`:''}</div>`).join('')}
+  ${g.pags.length<3?'<button class="lnk" id="pgmais" style="margin-top:8px">+ Dividir em outra forma</button>':''}
+  ${din?`<label style="margin-top:12px">Valor recebido em dinheiro (para calcular o troco)<input id="pgrec" inputmode="decimal" value="${esc(g.rec)}" placeholder="${brl(din.valor)}"></label>${troco>0?`<div class="ok" style="margin-top:8px;font-size:18px">Troco: <b>${brl(troco)}</b></div>`:''}`:''}
+  <div class="grp"><div class="t">Cliente ${cr?'(obrigatório no crediário)':'(opcional)'}</div><div style="display:grid;grid-template-columns:1.4fr 1fr;gap:8px"><input id="pgcli" list="pgclis" value="${esc(g.cli)}" placeholder="Nome" autocomplete="off"><input id="pgfone" type="tel" inputmode="tel" value="${esc(g.fone)}" placeholder="WhatsApp"></div><datalist id="pgclis">${todosClientes().map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist></div>
+  ${cr?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><label>Parcelas<select id="pgn">${[1,2,3,4,5,6,8,10].map(k=>`<option ${String(k)===g.n?'selected':''}>${k}</option>`).join('')}</select></label><label>1º vencimento<input id="pgvenc" type="date" value="${esc(g.venc)}"></label></div><div class="ok" style="margin-top:8px">${g.n}× de ${brl(cr.valor/(+g.n||1))} no crediário</div>`:''}
+  ${Math.abs(falta)>=0.01?`<div class="err" style="margin-top:12px">${falta>0?'Falta distribuir '+brl(falta):'As formas passam do total em '+brl(-falta)}</div>`:''}
+  <div id="pgerr"></div>
+  <button class="pri w" id="pgok" style="min-height:58px;font-size:19px;margin-top:14px">Concluir venda</button>`);
+ const c=$('#pgcli');c.oninput=()=>{const x=todosClientes().find(y=>y._k===chaveNome(c.value));if(x&&x.fone&&!$('#pgfone').value)$('#pgfone').value=fmtFone(x.fone)}}
+function guardaPag(){const g=LJ.pg;if(!g||!$('#pgcli'))return;g.cli=$('#pgcli').value;g.fone=$('#pgfone').value;if($('#pgrec'))g.rec=$('#pgrec').value;if($('#pgn'))g.n=$('#pgn').value;if($('#pgvenc'))g.venc=$('#pgvenc').value;
+ document.querySelectorAll('[data-pgv]').forEach(i=>{const v=parseValor(i.value);g.pags[+i.dataset.pgv].valor=isFinite(v)?v:0})}
+async function concluirVenda(){guardaPag();const g=LJ.pg,T=totCart(),e=m=>{$('#pgerr').innerHTML=`<div class="err" style="margin-top:12px">${m}</div>`};
+ const soma=Math.round(g.pags.reduce((s,p)=>s+(+p.valor||0),0)*100)/100;if(Math.abs(soma-T.tot)>=0.01)return e('A soma das formas precisa dar '+brl(T.tot)+'.');
+ if(g.pags.some(p=>!(p.valor>0)))return e('Cada forma precisa ter um valor.');
+ const cr=g.pags.find(p=>p.forma==='Crediário');if(cr&&(!g.cli.trim()||soDig(g.fone).length<10))return e('No crediário, coloque o nome e o WhatsApp da cliente.');
+ const b=$('#pgok');b.disabled=true;b.textContent='Salvando…';
+ try{
+  const num=(+S.emp.seqVenda||0)+1,agora=new Date(),hora=pad(agora.getHours())+':'+pad(agora.getMinutes());await API.saveEmp(S.user.uid,{seqVenda:num});S.emp.seqVenda=num;
+  const lancs=[];for(const p of g.pags.filter(p=>p.forma!=='Crediário')){const l=await API.addLanc(S.user.uid,{tipo:'in',valor:p.valor,cat:'venda',forma:p.forma,nota:false,data:hoje(),desc:('Venda nº '+num+(g.cli.trim()?' - '+g.cli.trim():'')).slice(0,80)});lancs.push(l.id);if(hoje().startsWith(S.ano+'-'))S.lanc.push(l)}
+  let credId=null;if(cr){const n=Math.max(1,parseInt(g.n)||1),resto=Math.round(cr.valor*100),base=Math.floor(resto/n);
+   const parcelas=[...Array(n)].map((_,i)=>({n:i+1,venc:addMes(g.venc,i),valor:(base+(i===n-1?resto-base*n:0))/100,pago:false}));
+   const c=await API.addCred(S.user.uid,{cli:g.cli.trim().slice(0,60),fone:soDig(g.fone).slice(0,13),desc:('Venda nº '+num+': '+LJ.cart.map(i=>i.qtd+' '+i.nome).join(', ')).slice(0,60),total:cr.valor,valor:cr.valor,entrada:0,data:hoje(),parcelas,venda:num});CR.lista.push(c);credId=c.id}
+  const venda={num,data:hoje(),hora,itens:LJ.cart.map(({k,...i})=>i),sub:T.sub,desconto:T.desc,total:T.tot,pags:g.pags.map(p=>({forma:p.forma,valor:p.valor})),troco:g.rec?Math.max(0,parseValor(g.rec)-((g.pags.find(p=>p.forma==='Dinheiro')||{}).valor||0)):0,
+   cli:g.cli.trim().slice(0,60),fone:soDig(g.fone).slice(0,13),canal:'loja',lancs,credId,nfce:{st:'pendente'}};
+  const v=await API.addVenda(S.user.uid,venda);LJ.vendas.push(v);
+  await mexerEstoque(venda.itens,-1);
+  if(venda.cli&&!todosClientes().some(c=>c._k===chaveNome(venda.cli))){try{await salvarCadCli([...cadCli(),{nome:venda.cli,fone:venda.fone}])}catch(x){}}
+  LJ.cart=[];LJ.desc='';LJ.q='';LJ.pg=null;render();mostrarVenda(v.id,true);
+ }catch(err){b.disabled=false;b.textContent='Concluir venda';e(esc(errMsg(err)))}}
+async function mexerEstoque(itens,sinal){const porProd={};for(const i of itens)(porProd[i.pid]=porProd[i.pid]||[]).push(i);
+ for(const [pid,its] of Object.entries(porProd)){const p=LJ.prods.find(x=>x.id===pid);if(!p)continue;
+  p.vars=p.vars.map(v=>{const q=its.filter(i=>i.vid===v.id).reduce((s,i)=>s+i.qtd,0);return q?{...v,est:(+v.est||0)+sinal*q}:v});await API.saveProd(S.user.uid,p)}}
+function cupomHTML(v){const e=S.emp;return `<div class="cupom"><b style="font-size:15px">${esc(e.nome)}</b><br>${e.razao?esc(e.razao)+'<br>':''}${e.cnpj?'CNPJ '+esc(fmtCNPJ(e.cnpj))+'<br>':''}${e.cidade?esc(e.cidade+'/'+(e.uf||''))+'<br>':''}
+ <hr>COMPROVANTE DE VENDA Nº ${v.num}<br>${dBR(v.data)}/${v.data.slice(0,4)} ${esc(v.hora||'')}<hr>
+ ${v.itens.map(i=>`<div>${i.qtd}× ${esc(i.nome)}${i.var?' '+esc(i.var):''}</div><div class="r"><span>${brl(i.preco)}</span><span>${brl(i.qtd*i.preco)}</span></div>`).join('')}<hr>
+ ${v.desconto?`<div class="r"><span>Subtotal</span><span>${brl(v.sub)}</span></div><div class="r"><span>Desconto</span><span>-${brl(v.desconto)}</span></div>`:''}
+ <div class="r" style="font-size:15px"><b>TOTAL</b><b>${brl(v.total)}</b></div>${v.pags.map(p=>`<div class="r"><span>${esc(p.forma)}</span><span>${brl(p.valor)}</span></div>`).join('')}${v.troco?`<div class="r"><span>Troco</span><span>${brl(v.troco)}</span></div>`:''}
+ ${v.cli?'<hr>Cliente: '+esc(v.cli):''}<hr><div style="text-align:center">${v.nfce&&v.nfce.st==='autorizada'?'NFC-e autorizada':'Este comprovante não é documento fiscal'}<br>Obrigado pela preferência!</div></div>`}
+function mostrarVenda(id,nova){const v=LJ.vendas.find(x=>x.id===id);if(!v)return;
+ sheetOS(`<div class="hd"><h2>${nova?'Venda concluída':'Venda nº '+v.num}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  ${nova&&v.troco?`<div class="ok" style="font-size:20px;text-align:center;margin-bottom:10px">Troco: <b>${brl(v.troco)}</b></div>`:''}
+  <div class="cupom-tela">${cupomHTML(v)}</div>
+  ${v.cancelada?'<div class="err" style="margin-top:10px">Venda cancelada. O estoque e o caixa foram desfeitos.</div>':`<div class="pill p-w" style="margin-top:10px;white-space:normal">NFC-e: a emissão automática entra na próxima etapa. Por enquanto emita a nota onde já emite hoje.</div>`}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button data-vimp="${esc(v.id)}">Imprimir</button>${v.fone?`<a class="pri" href="https://wa.me/${foneWa(v.fone)}?text=${encodeURIComponent(msgVenda(v))}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;border-radius:12px;font-weight:600">WhatsApp</a>`:'<span></span>'}</div>
+  ${nova?'<button class="pri w" id="vnova" style="min-height:56px;margin-top:10px">Nova venda</button>':(!v.cancelada?`<button class="w" data-vcanc="${esc(v.id)}" style="margin-top:10px;color:var(--out)">Cancelar venda</button>`:'')}`)}
+function msgVenda(v){return `Olá${v.cli?', '+v.cli.split(' ')[0]:''}! Obrigado pela compra na ${S.emp.nome} 😊\n${v.itens.map(i=>`• ${i.qtd}× ${i.nome}${i.var?' ('+i.var+')':''}: ${brl(i.qtd*i.preco)}`).join('\n')}\nTotal: ${brl(v.total)} (${v.pags.map(p=>p.forma).join(' + ')})`}
+async function cancelarVenda(id){const v=LJ.vendas.find(x=>x.id===id);if(!v)return;
+ if(v.credId){const c=CR.lista.find(x=>x.id===v.credId);if(c&&(c.parcelas||[]).some(p=>p.pago)){toast('Essa venda tem parcela do crediário já recebida. Desfaça o recebimento no Crediário antes.');return}}
+ confirmar('Cancelar a venda nº '+v.num+' de '+brl(v.total)+'?',async()=>{try{
+  for(const l of v.lancs||[]){await API.delLanc(S.user.uid,l);S.lanc=S.lanc.filter(x=>x.id!==l)}
+  if(v.credId){await API.delCred(S.user.uid,v.credId);CR.lista=CR.lista.filter(x=>x.id!==v.credId)}
+  await mexerEstoque(v.itens,1);await API.updVenda(S.user.uid,v.id,{cancelada:true,canceladaEm:hoje()});v.cancelada=true;render();toast('Venda cancelada: estoque e caixa desfeitos')}catch(err){toast(errMsg(err))}},'Cancelar venda')}
+
+/* ---------- Vendas (histórico) ---------- */
+function vVendas(){const L=[...LJ.vendas].sort((a,b)=>(b.data+b.hora).localeCompare(a.data+a.hora));const dias={};L.forEach(v=>(dias[v.data]=dias[v.data]||[]).push(v));
+ return shell(`<h1>Vendas</h1><p class="mut" style="margin:4px 0 0">Últimos 90 dias. Toque numa venda para ver, imprimir ou cancelar.</p>
+ <div class="card">${Object.keys(dias).length?Object.entries(dias).map(([d,vs])=>{const t=vs.filter(v=>!v.cancelada).reduce((s,v)=>s+v.total,0);return `<div class="day" style="display:flex;justify-content:space-between"><span>${dBR(d)}</span><span>${brl(t)}</span></div>${vs.map(itemVenda).join('')}`}).join(''):'<p class="mut">Nenhuma venda ainda.</p>'}</div>`)}
+
+/* ---------- Produtos ---------- */
+function vProdutos(){const k=chaveNome(LJ.pq),A=LJ.prods.filter(p=>!k||chaveNome(p.nome+' '+(p.ref||'')+' '+(p.cat||'')).includes(k)||(p.vars||[]).some(v=>v.ean===soDig(LJ.pq))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'));
+ const semNcm=LJ.prods.filter(p=>soDig(p.ncm).length!==8).length,valEst=LJ.prods.reduce((s,p)=>s+estTot(p)*(+p.custo||0),0);
+ return shell(`<h1 class="prodlist">Produtos</h1>
+ <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px"><button class="pri" id="pnovo" style="min-height:52px">+ Produto</button><button id="petq" style="min-height:52px">Etiquetas</button></div>
+ <input id="pbusca" type="search" value="${esc(LJ.pq)}" placeholder="Buscar por nome, referência ou código" style="margin-top:12px" aria-label="Buscar produto">
+ <p class="mut" style="margin:10px 2px 0;font-size:14px">${LJ.prods.length} produto(s) · ${LJ.prods.reduce((s,p)=>s+estTot(p),0)} peças em estoque${valEst?' · '+brl(valEst)+' a preço de custo':''}</p>
+ ${semNcm?`<div class="tip"><p><b>${semNcm} produto(s) sem NCM.</b> Sem NCM a nota fiscal é recusada. O escritório confere o cadastro fiscal.</p></div>`:''}
+ <div class="card">${A.length?A.map(p=>{const t=estTot(p);return `<button class="li" data-pver="${esc(p.id)}" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:12px 0;min-height:0;font-weight:400">
+  <div><b>${esc(p.nome)}</b>${p.ativo===false?' <span class="pill p-g">inativo</span>':''}<div class="d">${esc([p.ref,p.cat,(p.vars||[]).length>1?p.vars.length+' variações':'',soDig(p.ncm).length===8?'':'sem NCM'].filter(Boolean).join(' · '))}</div></div>
+  <div style="text-align:right"><div class="v">${brl(p.preco)}</div><span class="pill ${t<=0?'p-out':t<=3?'p-w':'p-in'}">${t} un.</span></div></button>`}).join('')
+  :`<p class="mut" style="margin:0">${k?'Nenhum produto encontrado.':'Nenhum produto ainda. Toque em "+ Produto" para cadastrar o primeiro, com tamanhos e cores.'}</p>`}</div>`)}
+function abrirProduto(id){const p=id?JSON.parse(JSON.stringify(LJ.prods.find(x=>x.id===id))):{nome:'',ref:'',cat:'',preco:'',custo:'',ncm:'',cfop:'5102',csosn:'102',orig:'0',un:'UN',vars:[],ativo:true};
+ const tams=[...new Set(p.vars.map(v=>v.tam))],cores=[...new Set(p.vars.map(v=>v.cor))];
+ LJ.ed={p,tams:tams.length?tams:['Único'],cores:cores.length?cores:['Único'],fisc:!id};renderProduto()}
+function syncVars(){const ed=LJ.ed,p=ed.p,us=new Set(LJ.prods.flatMap(x=>(x.vars||[]).map(v=>v.ean)));const nv=[];
+ for(const c of ed.cores)for(const t of ed.tams){const o=p.vars.find(v=>v.tam===t&&v.cor===c);nv.push(o||{id:'v'+Math.random().toString(36).slice(2,8),tam:t,cor:c,est:0,ean:novoEAN(us)})}p.vars=nv}
+function renderProduto(){const ed=LJ.ed,p=ed.p;syncVars();
+ sheetOS(`<div class="hd"><h2>${p.id?'Editar produto':'Novo produto'}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">
+  <label>Nome do produto<input id="prnome" maxlength="60" value="${esc(p.nome)}" placeholder="Ex.: Camiseta básica algodão"></label>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Referência<input id="prref" maxlength="20" value="${esc(p.ref||'')}" placeholder="Ex.: CB-001"></label><label>Categoria<input id="prcat" maxlength="30" list="prcats" value="${esc(p.cat||'')}" placeholder="Ex.: Camisetas"><datalist id="prcats">${[...new Set(LJ.prods.map(x=>x.cat).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join('')}</datalist></label></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Preço de venda (R$)<input id="prpreco" inputmode="decimal" value="${esc(String(p.preco).replace('.',','))}" placeholder="0,00"></label><label>Custo (R$, opcional)<input id="prcusto" inputmode="decimal" value="${esc(String(p.custo||'').replace('.',','))}" placeholder="0,00"></label></div>
+  <div class="grp" style="margin:0"><div class="t">Tamanhos</div><div class="chips">${Object.entries({roupa:'PP ao XG',num:'34 ao 46',calc:'Calçado',inf:'Infantil',unico:'Tamanho único'}).map(([k,n])=>`<button class="chip" data-prgrade="${k}">${n}</button>`).join('')}</div>
+   <input id="prtams" value="${esc(ed.tams.join(', '))}" style="margin-top:8px" aria-label="Tamanhos separados por vírgula"></div>
+  <label>Cores (separe por vírgula)<input id="prcores" value="${esc(ed.cores.join(', '))}" placeholder="Ex.: Preto, Branco, Azul"></label>
+  <div class="grp" style="margin:0"><div class="t">Estoque de cada variação</div>
+   <div class="scroll"><table class="vt"><thead><tr><th>Tam.</th><th>Cor</th><th>Estoque</th><th>Código de barras</th></tr></thead><tbody>
+   ${p.vars.map((v,ix)=>`<tr><td>${esc(v.tam)}</td><td>${esc(v.cor)}</td><td><input data-vest="${ix}" type="number" inputmode="numeric" value="${+v.est||0}" style="width:76px;min-height:42px"></td><td><input data-vean="${ix}" inputmode="numeric" value="${esc(v.ean||'')}" style="min-width:150px;min-height:42px;font-family:monospace"></td></tr>`).join('')}</tbody></table></div>
+   <p class="mut" style="margin:6px 0 0;font-size:13px">O código de barras é gerado sozinho para imprimir na etiqueta. Se a peça já vem com código do fornecedor, bipe ou digite por cima.</p></div>
+  <details class="card" style="margin:0" ${ed.fisc?'open':''}><summary style="cursor:pointer;font-weight:600">Dados fiscais (para a nota) ${soDig(p.ncm).length===8?'<span class="pill p-in">ok</span>':'<span class="pill p-w">falta NCM</span>'}</summary>
+   <div class="stack" style="margin-top:10px"><label>NCM<input id="prncm" list="prncms" inputmode="numeric" value="${esc(p.ncm||'')}" placeholder="Ex.: 6109.10.00"><datalist id="prncms">${NCMS.map(([c,d])=>`<option value="${c}">${esc(d)}</option>`).join('')}</datalist></label>
+   <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><label>CFOP<input id="prcfop" inputmode="numeric" value="${esc(p.cfop||'5102')}"></label><label>CSOSN<input id="prcsosn" inputmode="numeric" value="${esc(p.csosn||'102')}"></label><label>Origem<select id="prorig">${[['0','0 Nacional'],['1','1 Importado direto'],['2','2 Importado no Brasil']].map(([k,n])=>`<option value="${k}" ${String(p.orig||'0')===k?'selected':''}>${n}</option>`).join('')}</select></label></div>
+   <p class="mut" style="margin:0;font-size:13px">As sugestões de NCM são um ponto de partida. A JM Gestão confere o cadastro fiscal antes de ligar a nota.</p></div></details>
+  ${p.id?`<label style="flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" id="prativo" style="width:24px;min-height:24px" ${p.ativo!==false?'checked':''}> Produto ativo (aparece no caixa)</label>`:''}
+  <div id="prerr"></div><button class="pri w" id="prsalva" style="min-height:56px">Salvar produto</button>
+  ${p.id?`<button class="w" data-petqp="${esc(p.id)}">Imprimir etiquetas deste produto</button>`:''}</div>`)}
+function guardaProduto(){const ed=LJ.ed,p=ed.p;if(!$('#prnome'))return;p.nome=$('#prnome').value;p.ref=$('#prref').value.trim();p.cat=$('#prcat').value.trim();p.preco=$('#prpreco').value;p.custo=$('#prcusto').value;
+ if($('#prncm')){p.ncm=$('#prncm').value.trim();p.cfop=soDig($('#prcfop').value).slice(0,4);p.csosn=soDig($('#prcsosn').value).slice(0,3);p.orig=$('#prorig').value}
+ if($('#prativo'))p.ativo=$('#prativo').checked;
+ document.querySelectorAll('[data-vest]').forEach(i=>{p.vars[+i.dataset.vest].est=parseInt(i.value)||0});document.querySelectorAll('[data-vean]').forEach(i=>{p.vars[+i.dataset.vean].ean=soDig(i.value).slice(0,14)});
+ const sp=s=>[...new Set(String(s).split(',').map(x=>x.trim()).filter(Boolean))].slice(0,15);ed.tams=sp($('#prtams').value);ed.cores=sp($('#prcores').value);if(!ed.tams.length)ed.tams=['Único'];if(!ed.cores.length)ed.cores=['Único']}
+async function salvarProduto(){guardaProduto();syncVars();const ed=LJ.ed,p=ed.p,e=m=>{$('#prerr').innerHTML=`<div class="err">${m}</div>`};
+ const preco=parseValor(p.preco),custo=p.custo?parseValor(p.custo):0;if(!p.nome.trim())return e('Escreva o nome do produto.');if(!(preco>0))return e('Coloque o preço de venda.');
+ const eans=p.vars.map(v=>v.ean).filter(Boolean);if(new Set(eans).size!==eans.length)return e('Há código de barras repetido entre as variações.');
+ const outro=LJ.prods.find(x=>x.id!==p.id&&(x.vars||[]).some(v=>eans.includes(v.ean)));if(outro)return e('Um código de barras já está no produto "'+esc(outro.nome)+'".');
+ if(p.ncm&&soDig(p.ncm).length!==8)return e('O NCM tem 8 números. Ex.: 6109.10.00');
+ const dados={nome:p.nome.trim().slice(0,60),ref:p.ref.slice(0,20),cat:p.cat.slice(0,30),preco,custo:custo>0?custo:0,ncm:soDig(p.ncm).slice(0,8),cfop:p.cfop||'5102',csosn:p.csosn||'102',orig:p.orig||'0',un:'UN',ativo:p.ativo!==false,vars:p.vars.map(v=>({id:v.id,tam:v.tam,cor:v.cor,est:+v.est||0,ean:v.ean||''}))};
+ try{const r=await API.saveProd(S.user.uid,p.id?{...dados,id:p.id}:dados);if(p.id)LJ.prods=LJ.prods.map(x=>x.id===p.id?r:x);else LJ.prods.push(r);fecharSheet();LJ.ed=null;render();toast(p.id?'Produto atualizado':'Produto cadastrado')}catch(err){e(esc(errMsg(err)))}}
+function etiquetas(lista){if(!lista.length){toast('Nada para imprimir');return}
+ imprimir(`<div class="etqs">${lista.map(({p,v})=>`<div class="etq"><div class="en">${esc(p.nome)}</div><div class="ev">${esc(descVar(v))}</div><div class="eb">${eanSVG(v.ean)}</div><div class="ep">${brl(precoVar(p,v))}</div></div>`).join('')}</div>`,'p-etq')}
+function abrirEtiquetas(){const A=LJ.prods.filter(p=>p.ativo!==false);
+ sheetOS(`<div class="hd"><h2>Imprimir etiquetas</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><p class="mut" style="margin:0 0 10px">Marque os produtos. Sai uma etiqueta por peça em estoque (no mínimo uma por variação).</p>
+  <div class="stack">${A.map(p=>`<label style="flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" data-etqsel="${esc(p.id)}" style="width:24px;min-height:24px"> ${esc(p.nome)} <span class="mut">(${estTot(p)} un.)</span></label>`).join('')||'<p class="mut">Cadastre produtos primeiro.</p>'}</div>
+  <button class="pri w" id="etqgo" style="min-height:54px;margin-top:12px">Imprimir</button>`)}
+function etqDoProduto(p){return (p.vars||[]).flatMap(v=>Array(Math.max(1,Math.min(+v.est||0,50))).fill({p,v}))}
+
+/* ---------- Mais ---------- */
+function vMais(){const it=[['vendas','Vendas','Histórico, imprimir e cancelar vendas'],['extrato','Extrato','Tudo que entrou e saiu do caixa'],['relatorio','Relatório do mês','Resumo das receitas'],['ajuda','Ajuda e meus dados','Dúvidas, dados da empresa e configurações']];
+ return shell(`<h1>Mais</h1>${it.map(([h,t,d])=>`<a href="#${h}" class="card" style="display:block;text-decoration:none;color:inherit"><b>${t}</b><div class="mut">${d}</div></a>`).join('')}`)}
+
+/* ---------- eventos ---------- */
+document.addEventListener('click',async e=>{const t=e.target.closest('button,a');if(!t)return;const ds=t.dataset;
+ if(ds.padd){const p=LJ.prods.find(x=>x.id===ds.padd);if(p)escolherVar(p);return}
+ if(ds.pvar){const [pid,vid]=ds.pvar.split('|'),p=LJ.prods.find(x=>x.id===pid),v=p&&p.vars.find(x=>x.id===vid);if(v){addCarrinho(p,v);fecharSheet();LJ.q='';render();focoPDV()}return}
+ if(ds.pq){const [ix,d]=ds.pq.split('|').map(Number),i=LJ.cart[ix];i.qtd+=d;if(i.qtd<=0)LJ.cart.splice(ix,1);render();return}
+ if(t.id==='pdvlimpa'){confirmar('Limpar a venda atual?',async()=>{LJ.cart=[];LJ.desc='';render()},'Limpar');return}
+ if(t.id==='pdvcam'){abrirCamera();return}
+ if(t.id==='pdvpagar'||t.id==='pdvpagar2'){abrirPagamento();return}
+ if(ds.pgf){guardaPag();const [ix,f]=ds.pgf.split('|');LJ.pg.pags[+ix].forma=f;renderPag();return}
+ if(t.id==='pgmais'){guardaPag();const T=totCart(),s=LJ.pg.pags.reduce((a,p)=>a+(+p.valor||0),0);LJ.pg.pags.push({forma:'Pix',valor:Math.max(0,Math.round((T.tot-s)*100)/100)});renderPag();return}
+ if(ds.pgdel){guardaPag();LJ.pg.pags.splice(+ds.pgdel,1);if(LJ.pg.pags.length===1)LJ.pg.pags[0].valor=totCart().tot;renderPag();return}
+ if(t.id==='pgok'){concluirVenda();return}
+ if(t.id==='vnova'){fecharSheet();focoPDV();return}
+ if(ds.vver){mostrarVenda(ds.vver);return}
+ if(ds.vimp){const v=LJ.vendas.find(x=>x.id===ds.vimp);if(v)imprimir(cupomHTML(v),'p-cupom');return}
+ if(ds.vcanc){fecharSheet();cancelarVenda(ds.vcanc);return}
+ if(t.id==='pnovo'){abrirProduto(null);return}
+ if(ds.pver){abrirProduto(ds.pver);return}
+ if(ds.prgrade){guardaProduto();LJ.ed.tams=GRADES[ds.prgrade].slice();if(ds.prgrade==='unico')LJ.ed.cores=LJ.ed.cores.length?LJ.ed.cores:['Único'];renderProduto();return}
+ if(t.id==='prsalva'){salvarProduto();return}
+ if(ds.petqp){const p=LJ.prods.find(x=>x.id===ds.petqp);if(p)etiquetas(etqDoProduto(p));return}
+ if(t.id==='petq'){abrirEtiquetas();return}
+ if(t.id==='etqgo'){const ids=[...document.querySelectorAll('[data-etqsel]:checked')].map(i=>i.dataset.etqsel);etiquetas(LJ.prods.filter(p=>ids.includes(p.id)).flatMap(etqDoProduto));return}
+ if(t.id==='lojaon'){const on=!S.emp.lojaPDV;await API.saveEmp(S.user.uid,{lojaPDV:on});S.emp.lojaPDV=on;if(on)await carregarLoja();go(on?'produtos':'inicio');toast(on?'Loja completa ligada: cadastre os produtos':'Loja completa desligada');return}
+});
+document.addEventListener('input',e=>{const id=e.target.id;
+ if(id==='pdvq'){LJ.q=e.target.value;const p=e.target.selectionStart;render();const i=$('#pdvq');if(i){i.focus();i.setSelectionRange(p,p)}}
+ if(id==='pbusca'){LJ.pq=e.target.value;const p=e.target.selectionStart;render();const i=$('#pbusca');if(i){i.focus();i.setSelectionRange(p,p)}}});
+document.addEventListener('change',e=>{const id=e.target.id;
+ if(id==='pdvdesc'){LJ.desc=e.target.value;render();return}
+ if(['prtams','prcores'].includes(id)){guardaProduto();renderProduto();return}
+ if(e.target.dataset&&e.target.dataset.pgv!==undefined||['pgn','pgrec'].includes(id)){guardaPag();renderPag()}});
+document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const id=e.target.id;
+ if(id==='pdvq'){e.preventDefault();e.stopPropagation();const q=e.target.value.trim();if(!q)return;if(lerCodigo(q))return;const R=buscaProd(q);if(R.length===1){LJ.q='';escolherVar(R[0])}else if(!R.length)toast('Nada encontrado para "'+q+'"');return}
+ if(id==='pdvdesc'){e.preventDefault();LJ.desc=e.target.value;render()}},true);
+
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
- const h=location.hash.slice(1);S.tab=abas().map(x=>x[0]).includes(h)?h:'inicio';
- $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda']:[])].includes(h)?h:'inicio';
+ $('#app').innerHTML=({vender:vVender,produtos:vProdutos,vendas:vVendas,mais:vMais,inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ if(S.tab==='vender')focoPDV();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
 async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
@@ -1050,7 +1330,7 @@ async function iniciar(u){
  $('#app').innerHTML='<div class="center"><p class="mut">Carregando…</p></div>';
  try{
   if(S.isAdmin){await carregarAdmin()}
-  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await Promise.all([carregarAgenda(),carregarCred(),carregarOS()])}}
+  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await Promise.all([carregarAgenda(),carregarCred(),carregarOS(),carregarLoja()])}}
   render()}
  catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div><button class="w" style="margin-top:12px" id="sair">Voltar</button></div></div>`}
 }
