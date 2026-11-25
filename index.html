@@ -179,6 +179,17 @@ kbd{font:600 11px/1 Montserrat,sans-serif;border:1px solid var(--line);border-bo
 @media (min-width:900px){nav.tabs.lj-tabs{display:none}.wrap.lw{padding-bottom:40px}.wrap:has(.painel){padding-bottom:40px}}
 @media (max-width:1050px){.painel{grid-template-columns:1fr}.pside{display:grid;grid-template-columns:1fr 1fr;gap:14px}.pside .card{margin-top:0}}
 @media (max-width:760px){.lt-busca{display:none}.lt-busca-m{display:inline-flex}.lt-brand{flex:1}.tiles{grid-template-columns:1fr 1fr;gap:10px}.tile{min-height:140px;padding:14px}.tl-tx>b{font-size:16px}.tl-tx small{display:none}.tl-tx{max-width:100%}.tile kbd{display:none}.tile:not(.tl-main) .tl-art{display:none}.pside{grid-template-columns:1fr}.lt-ic a.lt-b{display:none}.qmenu{position:fixed;left:10px;right:10px;width:auto;top:62px}}
+.ge .kpb{display:block;text-align:left;font-weight:400;min-height:0;width:100%;margin-top:0}.ge .kpb:hover{border-color:var(--gold)}.kp-al{border-color:var(--out)!important;background:var(--outbg)}
+.ge-hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}.ge-hd input{max-width:340px}
+.mods{display:flex;flex-wrap:wrap;gap:4px}.mods span{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--goldsoft);color:var(--ink)}
+table.adm tr.sel td{background:var(--goldsoft)}table.adm td button{white-space:nowrap}
+.ficha{border:2px solid var(--gold)}.tabs-f{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0;border-bottom:1px solid var(--line);padding-bottom:10px}
+.tabs-f button{min-height:40px;border-radius:999px;font-size:14px}.tabs-f button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.minis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.mini{border:1px solid var(--line);border-radius:14px;padding:12px}.mini .v{font-size:20px;margin:2px 0}.mini small{display:block;font-size:12.5px}.mini.al{border-color:var(--out);background:var(--outbg)}
+.sw-row{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--ink);font-size:16px}.sw-row small{display:block;color:var(--mut);font-size:13px;font-weight:400}
+.sw{appearance:none;width:52px!important;min-height:30px!important;height:30px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex:none;padding:0!important;border:0!important;transition:background .15s}
+.sw::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 3px #0003}.sw:checked{background:var(--in)}.sw:checked::after{transform:translateX(22px)}
+.ge-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.ge-2{display:grid;grid-template-columns:1fr 1fr;gap:24px}@media(max-width:760px){.ge-2{grid-template-columns:1fr}}
 #printarea{display:none}
 .danfe4{position:relative;font:7.5pt/1.25 Arial,sans-serif;color:#000}.danfe4 table{width:100%;border-collapse:collapse;margin-top:-1px}.danfe4 td,.danfe4 th{border:1px solid #000;padding:1px 3px;vertical-align:top}
 .danfe4 .rt{font-size:5.5pt;text-transform:uppercase}.danfe4 .vl{font-size:8pt;min-height:10px}.danfe4 .tit{font-weight:700;font-size:7pt;margin-top:4px}.danfe4 .corte{border-top:1px dashed #000;margin:6px 0}
@@ -669,39 +680,6 @@ async function carregarAdmin(){
  for(const e of emps){const L=await API.listLanc(e.uid,ano);e._fat=L.filter(isFat).reduce((s,l)=>s+l.valor,0);e._mes=L.filter(l=>l.data.startsWith(mesAt)&&isFat(l)).reduce((s,l)=>s+l.valor,0);
   e._ult=L.reduce((m,l)=>l.data>m?l.data:m,'');e._lim=limiteAno(e,ano).valor;e._pc=e._fat/e._lim*100;e._das=dasInfo(L).st}
  S.admin.emps=emps;S.admin.conv=conv}
-function vAdmin(){
- const A=S.admin,ano=new Date().getFullYear(),E=A.emps;
- const ativos=E.filter(e=>e._ult&&(Date.now()-new Date(e._ult))/864e5<=7).length;
- const pend=A.conv.filter(c=>!E.some(e=>(e.email||'').toLowerCase()===c.email));
- return `<header class="top wide-top"><div class="in"><div><div class="brand">JM Gestão<b>+</b> · Escritório</div><small>Piloto ${ano}</small></div><button id="sair">Sair</button></div></header>
- <main class="wrap wide">
- <div class="kp" style="margin-top:14px">
-  <div class="card"><div class="mut">Clientes usando</div><div class="big">${E.length}</div></div>
-  <div class="card"><div class="mut">Lançaram nos últimos 7 dias</div><div class="big">${ativos}</div></div>
-  <div class="card"><div class="mut">Convites sem acesso ainda</div><div class="big">${pend.length}</div></div>
-  <div class="card"><div class="mut">Perto do limite (80%+)</div><div class="big">${E.filter(e=>e._pc>=80).length}</div></div></div>
- <div class="card scroll"><h2 style="margin-bottom:8px">Clientes no piloto</h2>
-  ${E.length?`<table class="adm stk"><thead><tr><th>Cliente</th><th class="n">Faturamento no mês</th><th class="n">No ano</th><th>Limite MEI</th><th>DAS</th><th>Último lançamento</th><th></th></tr></thead><tbody>
-  ${E.sort((a,b)=>b._pc-a._pc).map(e=>`<tr><td><b>${esc(e.nome)}</b><br><span class="mut">${e.cnpj?esc(fmtCNPJ(e.cnpj))+' · ':'<span style="color:var(--out)">sem CNPJ</span> · '}${esc(e.email||'')}</span></td><td class="n">${brl(e._mes)}</td><td class="n">${brl(e._fat)}</td>
-   <td><span class="pill ${e._pc>=90?'p-out':e._pc>=80?'p-w':'p-in'}">${Math.round(e._pc)}%</span></td>
-   <td><span class="pill ${e._das==='ok'?'p-in':e._das==='late'?'p-w':'p-g'}">${e._das==='ok'?'Pago':e._das==='late'?'Não lançado':'A vencer'}</span></td>
-   <td>${e._ult?fmtData(e._ult):'<span class="mut">nunca</span>'}</td><td><button data-ver="${esc(e.uid)}" style="min-height:40px">Ver</button></td></tr>`).join('')}</tbody></table>`:'<p class="mut">Nenhum cliente entrou ainda. Envie os convites abaixo.</p>'}</div>
- ${A.sel?vAdminDet():''}
- <div class="card"><h2>Convidar cliente</h2><p class="mut" style="margin:4px 0 12px">Só e-mails convidados conseguem criar acesso. Depois de convidar, mande a mensagem pronta para o cliente.</p>
-  <form id="fconv" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end" class="cv">
-   <label>Nome do cliente<input name="nome" required></label><label>E-mail do cliente<input name="email" type="email" required></label><button class="pri" type="submit">Convidar</button></form>
-  <div style="margin-top:14px">${A.conv.map(c=>{const ok=E.some(e=>(e.email||'').toLowerCase()===c.email);return `<div class="li"><div><b>${esc(c.nome||'')}</b><div class="d">${esc(c.email)}</div></div>
-   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${ok?'p-in':'p-w'}">${ok?'Usando':'Aguardando'}</span><button data-msg="${esc(c.email)}" style="min-height:40px">Mensagem</button>${ok?'':`<button class="x" data-delconv="${esc(c.email)}" aria-label="Remover convite">×</button>`}</div></div>`}).join('')}</div></div>
- </main>`}
-function vAdminDet(){
- const e=S.admin.emps.find(x=>x.uid===S.admin.sel);if(!e)return '';
- const L=S.admin.lanc,LM=doMes(L,S.ano,S.mes),r=relatorioDados(LM);
- return `<div class="card" id="det"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><h2>${esc(e.nome)}</h2><button id="fechadet" style="min-height:40px">Fechar</button></div>
-  <div class="mnav" style="margin-top:10px"><button data-ames="-1" aria-label="Mês anterior">‹</button><h3 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h3><button data-ames="1" aria-label="Próximo mês">›</button></div>
-  ${e.lojaPDV?`<button data-admxml="1" style="margin-top:10px">Baixar XMLs de ${MESES[S.mes-1]} (NFC-e, NF-e e cartas de correção)</button>`:''}
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><span class="pill p-in">Entrou ${brl(soma(LM,'in'))}</span><span class="pill p-out">Saiu ${brl(soma(LM,'out'))}</span>
-   <span class="pill p-g">Comércio ${brl(r.comercio[0]+r.comercio[1])}</span><span class="pill p-g">Indústria ${brl(r.industria[0]+r.industria[1])}</span><span class="pill p-g">Serviços ${brl(r.servico[0]+r.servico[1])}</span><span class="pill p-w">Sem nota ${brl(r.comercio[0]+r.industria[0]+r.servico[0])}</span></div>
-  ${LM.length?LM.sort((a,b)=>b.data.localeCompare(a.data)).map(l=>itemLanc(l,false)).join(''):'<p class="mut">Sem lançamentos neste mês.</p>'}</div>`}
 function msgConvite(c){
  const url=location.href.split('#')[0];
  return `Olá, ${c.nome||''}! Liberamos seu acesso ao *JM Gestão+*, o app da JM Gestão Contábil para organizar o financeiro do seu negócio.\n\n1. Abra: ${url}\n2. Toque em *Primeiro acesso*\n3. Use este e-mail: ${c.email}\n4. Crie uma senha\n\nSão 4 perguntas rápidas e pronto. Qualquer dúvida, é só chamar aqui.`}
@@ -854,8 +832,9 @@ const saldoCred=c=>abertas(c).reduce((s,p)=>s+(+p.valor||0),0);
 function resumoCred(){const h=hoje(),sem=addDia(h,7);let rec=0,atr=0,semana=0,nAtr=new Set();
  for(const c of CR.lista)for(const p of abertas(c)){rec+=+p.valor||0;if(p.venc<h){atr+=+p.valor||0;nAtr.add(c.cli.toLowerCase())}else if(p.venc<=sem)semana+=+p.valor||0}
  return{rec,atr,semana,nAtr:nAtr.size}}
-const usaCred=()=>S.emp&&(S.emp.ramo?S.emp.ramo==='loja':(S.emp.tipo==='comercio'||S.emp.tipo==='ambos'))||CR.lista.length>0;
-const usaAgenda=()=>S.emp&&(S.emp.ramo?['salao','barbearia'].includes(S.emp.ramo):(S.emp.tipo==='servico'||S.emp.tipo==='ambos'))||AG.lista.length>0;
+const modX=k=>S.emp&&S.emp.mods&&S.emp.mods[k]!==undefined;
+const usaCred=()=>modX('cred')?!!S.emp.mods.cred:S.emp&&(S.emp.ramo?S.emp.ramo==='loja':(S.emp.tipo==='comercio'||S.emp.tipo==='ambos'))||CR.lista.length>0;
+const usaAgenda=()=>modX('agenda')?!!S.emp.mods.agenda:S.emp&&(S.emp.ramo?['salao','barbearia'].includes(S.emp.ramo):(S.emp.tipo==='servico'||S.emp.tipo==='ambos'))||AG.lista.length>0;
 function vFiado(){
  const r=resumoCred(),h=hoje();
  /* agrupa por cliente */
@@ -955,7 +934,7 @@ const OS={lista:[],ok:false,sh:null,filtro:'abertas'};
 const OS_ST={orcamento:['Orçamento','p-g'],aprovado:['Aprovado','p-w'],pronto:['Pronto','p-in'],entregue:['Entregue','p-in']};
 const totOS=o=>(o.itens||[]).reduce((s,i)=>s+(+i.valor||0),0);
 async function carregarOS(){if(!S.user||S.isAdmin)return;try{OS.lista=await API.listOS(S.user.uid);OS.ok=true}catch(e){OS.ok=false}}
-const usaOS=()=>S.emp&&(S.emp.ramo==='oficina'||OS.lista.length>0);
+const usaOS=()=>modX('os')?!!S.emp.mods.os:S.emp&&(S.emp.ramo==='oficina'||OS.lista.length>0);
 function vOS(){
  const ab=OS.lista.filter(o=>o.status!=='entregue'),prontas=ab.filter(o=>o.status==='pronto');
  const L=(OS.filtro==='abertas'?ab:OS.lista.filter(o=>o.status==='entregue')).sort((a,b)=>(b.num||0)-(a.num||0));
@@ -1313,7 +1292,7 @@ function etqDoProduto(p){return (p.vars||[]).flatMap(v=>Array(Math.max(1,Math.mi
 
 /* ---------- Mais ---------- */
 function vMais(){const it=[['vendas','Vendas','Histórico, imprimir e cancelar vendas'],['extrato','Extrato','Tudo que entrou e saiu do caixa'],['relatorio','Relatório do mês','Resumo das receitas'],['nfe','NF-e (nota modelo 55)','Venda para empresa, outro estado, devolução ao fornecedor e carta de correção'],['nfce','Nota fiscal (NFC-e)',nfOn()?(nfPendentes().length?nfPendentes().length+' venda(s) sem nota · emitir e baixar XML':'Ligada · pendentes e XML do mês'):'Emitir NFC-e direto na SEFAZ-MS'],['ajuda','Ajuda e meus dados','Dúvidas, dados da empresa e configurações']];
- return shell(`<h1>Mais</h1>${it.map(([h,t,d])=>`<a href="#${h}" class="card" style="display:block;text-decoration:none;color:inherit"><b>${t}</b><div class="mut">${d}</div></a>`).join('')}`)}
+ return shell(`<h1>Mais</h1>${it.filter(x=>fiscalOk()||!['nfe','nfce'].includes(x[0])).map(([h,t,d])=>`<a href="#${h}" class="card" style="display:block;text-decoration:none;color:inherit"><b>${t}</b><div class="mut">${d}</div></a>`).join('')}`)}
 
 /* ---------- eventos ---------- */
 document.addEventListener('click',async e=>{const t=e.target.closest('button,a');if(!t)return;const ds=t.dataset;
@@ -1361,7 +1340,9 @@ document.addEventListener('keydown',e=>{if(e.key!=='Enter')return;const id=e.tar
 
 /* ---------- NFC-e (programa da nota no computador do balcão) ---------- */
 const NFX={busy:{},aberta:null,teste:null};
-const nfOn=()=>!!(S.emp&&S.emp.nfceOn);
+const fiscalOk=()=>!(S.emp&&S.emp.mods&&S.emp.mods.fiscal===false);
+const nfOn=()=>!!(S.emp&&S.emp.nfceOn&&fiscalOk());
+const FISC=['nfe:nova','nfe','nfce'];const telasOk=()=>TELAS.filter(t=>fiscalOk()||!FISC.includes(t[0]));
 const nfUrl=()=>String(S.emp.nfceUrl||'http://127.0.0.1:8765').replace(/\/+$/,'');
 async function agente(path,body,ms=15000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
  try{const r=await fetch(nfUrl()+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:c.signal});
@@ -1781,7 +1762,7 @@ function avisosLoja(){const A=[];try{
 
 function vInicioLoja(){const h=hoje(),V=vendasDia(h),t=V.reduce((s,v)=>s+v.total,0),porForma={};
  V.forEach(v=>v.pags.forEach(p=>porForma[p.forma]=(porForma[p.forma]||0)+p.valor));
- const A=avisosLoja(),bloco=TELAS.slice(0,10);
+ const A=avisosLoja(),bloco=telasOk().slice(0,10);
  const tile=(x,i)=>{const [k,tit,desc,ic,ar,f]=x,m=metricaTela(k);return `<button class="tile${i===0?' tl-main':''}" data-tela="${k}" style="--ar:${AREA[ar]}">
   <span class="tl-ic">${IC[ic]}</span><span class="tl-tx"><b>${tit}</b><small>${desc}</small>${m?`<span class="tl-m">${m}</span>`:''}</span>
   <span class="tl-art" aria-hidden="true">${IC[ic]}</span>${f?`<kbd>${f}</kbd>`:''}</button>`};
@@ -1817,13 +1798,13 @@ function gaveta(){const e=S.emp,ini=(e.nome||'?').trim().split(/\s+/).map(w=>w[0
  ${g('Vendas',[['vender','vender','Vender (caixa)'],['vendas','vendas','Vendas'],['fiado','fiado','Contas a receber']])}
  ${g('Cadastros',[['produtos','produtos','Produtos e estoque'],['clientes','clientes','Clientes']])}
  ${g('Financeiro',[['despesa','despesa','Nova despesa'],['recebi','recebi','Recebi dinheiro'],['extrato','caixa','Fluxo de caixa'],['relatorio','relatorio','Relatório do mês']])}
- ${g('Notas fiscais',[['nfce','nfce','Nota do caixa (NFC-e)'],['nfe','nfe','NF-e (modelo 55)'],['nfe:nova','nfe','Nova NF-e']])}</nav>
+ ${!fiscalOk()?'':g('Notas fiscais',[['nfce','nfce','Nota do caixa (NFC-e)'],['nfe','nfe','NF-e (modelo 55)'],['nfe:nova','nfe','Nova NF-e']])}</nav>
  <button class="gav-sair" id="sair">${IC.sair}<span>Sair</span></button></aside>`}
 
 /* busca Ctrl+K */
 function abrirBusca(q=''){PN.busca=true;PN.bq=q;PN.bi=0;PN.acoes=false;PN.menu=false;render();setTimeout(()=>{const i=$('#bkq');if(i){i.focus();i.setSelectionRange(q.length,q.length)}},0)}
 function resultadosBusca(){const raw=PN.bq.trim(),soP=/^produtos\s/i.test(PN.bq),soC=/^clientes\s/i.test(PN.bq),q=chaveNome(raw.replace(/^(produtos|clientes)\s*/i,'')),R=[];
- if(!soP&&!soC)TELAS.filter(t=>!q||chaveNome(t[1]+' '+t[2]).includes(q)).forEach(t=>R.push({tipo:'Tela',ic:t[3],t:t[1],d:t[2],k:'tela:'+t[0],f:t[5]}));
+ if(!soP&&!soC)telasOk().filter(t=>!q||chaveNome(t[1]+' '+t[2]).includes(q)).forEach(t=>R.push({tipo:'Tela',ic:t[3],t:t[1],d:t[2],k:'tela:'+t[0],f:t[5]}));
  if(!soC&&(q||soP))LJ.prods.filter(p=>p.ativo!==false&&(!q||chaveNome(p.nome+' '+(p.ref||'')+' '+(p.cat||'')).includes(q)||(p.vars||[]).some(v=>soDig(v.ean)===soDig(raw)&&soDig(raw)))).slice(0,8).forEach(p=>{const est=(p.vars||[]).reduce((s,v)=>s+(+v.est||0),0);R.push({tipo:'Produto',ic:'produtos',t:p.nome,d:`${brl(+p.preco||0)} · ${est} em estoque${(p.vars||[]).length>1?' · '+p.vars.length+' variações':''}`,k:'prod:'+p.id})});
  if(!soP&&(q||soC))todosClientes().filter(c=>!q||chaveNome(c.nome).includes(q)||(soDig(raw)&&soDig(c.fone).includes(soDig(raw)))).slice(0,8).forEach(c=>R.push({tipo:'Cliente',ic:'clientes',t:c.nome,d:[c.fone?fmtFone(c.fone):'',c._deve>0?'deve '+brl(c._deve):''].filter(Boolean).join(' · '),k:'cli:'+c._k}));
  return R.slice(0,18)}
@@ -1864,8 +1845,127 @@ document.addEventListener('keydown',e=>{if(!S.user||S.isAdmin||!S.emp||!usaLoja(
   if(e.key==='Enter'&&R[PN.bi]){e.preventDefault();abrirResultado(R[PN.bi].k);return}return}
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();abrirBusca();return}
  if(e.key==='Escape'&&(PN.menu||PN.acoes)){PN.menu=false;PN.acoes=false;render();return}
- const f=/^F([2-9]|10)$/.test(e.key)&&TELAS.find(x=>x[5]===e.key);
+ const f=/^F([2-9]|10)$/.test(e.key)&&telasOk().find(x=>x[5]===e.key);
  if(f&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!$('#sheet').classList.contains('on')){e.preventDefault();abrirTela(f[0])}});
+
+/* ---------- Painel de gestão do escritório ---------- */
+const GE={aba:'resumo',busca:'',filtro:'todos',det:null,salvando:false};
+const MODS=[['loja','Loja completa','Caixa (PDV), produtos com grade, estoque e etiquetas'],['fiscal','Notas fiscais','NFC-e do caixa e NF-e modelo 55'],
+ ['cred','Crediário','Vendas a prazo e contas a receber'],['agenda','Agenda','Horários marcados (salão, barbearia)'],['os','Ordens de serviço','Oficina e assistência técnica']];
+const modOn=(e,k)=>k==='loja'?!!e.lojaPDV:(e.mods&&e.mods[k]!==undefined)?!!e.mods[k]:k==='fiscal'?!!e.lojaPDV:k==='cred'?(e.ramo?e.ramo==='loja':['comercio','ambos'].includes(e.tipo)):k==='agenda'?(e.ramo?['salao','barbearia'].includes(e.ramo):['servico','ambos'].includes(e.tipo)):k==='os'?e.ramo==='oficina':false;
+const mesAtual=()=>hoje().slice(0,7);
+function stPlano(e){const p=e.plano||{};if(!(+p.valor>0))return {st:'sem',txt:'Sem mensalidade'};
+ const pago=(p.pagoAte||'')>=mesAtual(),dia=+p.dia||10,hj=+hoje().slice(8,10);
+ if(pago)return {st:'ok',txt:'Em dia'};if(hj>dia)return {st:'late',txt:'Atrasada'};return {st:'aberto',txt:'Vence dia '+dia}}
+const pillPlano=e=>{const s=stPlano(e);return `<span class="pill ${s.st==='ok'?'p-in':s.st==='late'?'p-out':s.st==='aberto'?'p-w':'p-g'}">${s.txt}</span>`};
+
+function vAdmin(){const A=S.admin,ano=new Date().getFullYear(),E=A.emps,q=chaveNome(GE.busca);
+ const bloq=E.filter(e=>e.bloqueado),ativos=E.filter(e=>!e.bloqueado),mens=ativos.reduce((s,e)=>s+(+(e.plano||{}).valor||0),0);
+ const atras=ativos.filter(e=>stPlano(e).st==='late'),recebido=ativos.filter(e=>stPlano(e).st==='ok').reduce((s,e)=>s+(+(e.plano||{}).valor||0),0);
+ const pend=A.conv.filter(c=>!E.some(e=>(e.email||'').toLowerCase()===c.email));
+ const F={todos:()=>true,ativos:e=>!e.bloqueado,bloqueados:e=>e.bloqueado,atrasados:e=>!e.bloqueado&&stPlano(e).st==='late',loja:e=>e.lojaPDV,limite:e=>e.mei!==false&&e._pc>=80};
+ const L=E.filter(F[GE.filtro]||F.todos).filter(e=>!q||chaveNome((e.nome||'')+' '+(e.razao||'')+' '+(e.email||'')+' '+soDig(e.cnpj)).includes(q)||soDig(e.cnpj).includes(soDig(GE.busca)||'#'));
+ return `<header class="top wide-top"><div class="in"><div><div class="brand">JM Gestão<b>+</b> · Escritório</div><small>Painel de gestão dos clientes</small></div><button id="sair">Sair</button></div></header>
+ <main class="wrap wide ge">
+ <div class="kp" style="margin-top:14px">
+  <button class="card kpb" data-gef="ativos"><div class="mut">Clientes ativos</div><div class="big">${ativos.length}</div><small class="mut">${E.length} no total${pend.length?' · '+pend.length+' convite(s) sem acesso':''}</small></button>
+  <button class="card kpb" data-gef="todos"><div class="mut">Mensalidades do mês</div><div class="big">${brl(mens)}</div><small class="mut">${brl(recebido)} recebido</small></button>
+  <button class="card kpb${atras.length?' kp-al':''}" data-gef="atrasados"><div class="mut">Mensalidade atrasada</div><div class="big">${atras.length}</div><small class="mut">${atras.length?brl(atras.reduce((s,e)=>s+(+(e.plano||{}).valor||0),0))+' em aberto':'Ninguém atrasado'}</small></button>
+  <button class="card kpb" data-gef="bloqueados"><div class="mut">Acesso bloqueado</div><div class="big">${bloq.length}</div><small class="mut">${E.filter(e=>e.mei!==false&&e._pc>=80).length} MEI perto do limite</small></button></div>
+ <div class="card"><div class="ge-hd"><h2>Clientes</h2><input id="gebusca" type="search" value="${esc(GE.busca)}" placeholder="Buscar por nome, CNPJ ou e-mail" aria-label="Buscar cliente"></div>
+  <div class="chips" style="margin:10px 0 4px">${[['todos','Todos'],['ativos','Ativos'],['atrasados','Mensalidade atrasada'],['bloqueados','Bloqueados'],['loja','Com loja'],['limite','MEI perto do limite']].map(([k,t])=>`<button class="chip ${GE.filtro===k?'on':''}" data-gef="${k}">${t}</button>`).join('')}</div>
+  ${L.length?`<div class="scroll"><table class="adm stk"><thead><tr><th>Cliente</th><th>Situação</th><th>Módulos</th><th>Mensalidade</th><th class="n">Faturamento no mês</th><th class="n">No ano</th><th>Último uso</th><th></th></tr></thead><tbody>
+  ${L.sort((a,b)=>(a.bloqueado?1:0)-(b.bloqueado?1:0)||(a.nome||'').localeCompare(b.nome||'')).map(e=>`<tr class="${A.sel===e.uid?'sel':''}"><td><b>${esc(e.nome||'(sem nome)')}</b><br><span class="mut">${e.cnpj?esc(fmtCNPJ(e.cnpj)):'<span style="color:var(--out)">sem CNPJ</span>'} · ${e.mei===false?'Simples':'MEI'}${e.mei!==false?` <span class="pill ${e._pc>=90?'p-out':e._pc>=80?'p-w':'p-g'}" title="Limite do MEI usado">${Math.round(e._pc)}%</span>`:''}</span></td>
+   <td>${e.bloqueado?'<span class="pill p-out">Bloqueado</span>':'<span class="pill p-in">Ativo</span>'}</td>
+   <td><div class="mods">${MODS.filter(([k])=>modOn(e,k)).map(([k,t])=>`<span>${t}</span>`).join('')||'<span class="mut">Só financeiro</span>'}</div></td>
+   <td>${+(e.plano||{}).valor>0?`<span class="v">${brl(+e.plano.valor)}</span><br>`:''}${pillPlano(e)}</td>
+   <td class="n">${brl(e._mes)}</td><td class="n">${brl(e._fat)}</td><td>${e._ult?fmtData(e._ult):'<span class="mut">nunca</span>'}</td>
+   <td><button data-ver="${esc(e.uid)}" style="min-height:40px">Abrir ficha</button></td></tr>`).join('')}</tbody></table></div>`:`<p class="mut">${E.length?'Nenhum cliente nesse filtro.':'Nenhum cliente entrou ainda. Envie os convites abaixo.'}</p>`}</div>
+ ${A.sel?vAdminDet():''}
+ <div class="card"><h2>Convidar cliente</h2><p class="mut" style="margin:4px 0 12px">Só e-mails convidados conseguem criar acesso. Depois de convidar, mande a mensagem pronta para o cliente.</p>
+  <form id="fconv" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:10px;align-items:end" class="cv">
+   <label>Nome do cliente<input name="nome" required></label><label>E-mail do cliente<input name="email" type="email" required></label><button class="pri" type="submit">Convidar</button></form>
+  <div style="margin-top:14px">${A.conv.map(c=>{const ok=E.some(e=>(e.email||'').toLowerCase()===c.email);return `<div class="li"><div><b>${esc(c.nome||'')}</b><div class="d">${esc(c.email)}</div></div>
+   <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="pill ${ok?'p-in':'p-w'}">${ok?'Usando':'Aguardando'}</span><button data-msg="${esc(c.email)}" style="min-height:40px">Mensagem</button>${ok?'':`<button class="x" data-delconv="${esc(c.email)}" aria-label="Remover convite">×</button>`}</div></div>`}).join('')}</div></div>
+ </main>`}
+
+function vAdminDet(){const e=S.admin.emps.find(x=>x.uid===S.admin.sel);if(!e)return '';const ab=GE.aba;
+ const abas=[['resumo','Resumo'],['modulos','Módulos'],['empresa','Empresa'],['acesso','Acesso e plano'],['lanc','Lançamentos']];
+ return `<section class="card ficha" id="det"><div class="ge-hd"><div><h2>${esc(e.nome||'(sem nome)')}</h2><div class="mut">${esc(e.email||'')}${e.cnpj?' · CNPJ '+esc(fmtCNPJ(e.cnpj)):''}</div></div>
+  <div style="display:flex;gap:8px;align-items:center">${e.bloqueado?'<span class="pill p-out">Bloqueado</span>':'<span class="pill p-in">Ativo</span>'}<button id="fechadet" style="min-height:40px">Fechar</button></div></div>
+  <div class="tabs-f" role="tablist">${abas.map(([k,t])=>`<button role="tab" aria-selected="${ab===k}" class="${ab===k?'on':''}" data-geaba="${k}">${t}</button>`).join('')}</div>
+  <div class="ficha-c">${({resumo:fichaResumo,modulos:fichaModulos,empresa:fichaEmpresa,acesso:fichaAcesso,lanc:fichaLanc})[ab](e)}</div></section>`}
+const navMes=()=>`<div class="mnav" style="margin:4px 0 12px"><button data-ames="-1" aria-label="Mês anterior">‹</button><h3 style="text-transform:capitalize">${MESES[S.mes-1]} ${S.ano}</h3><button data-ames="1" aria-label="Próximo mês">›</button></div>`;
+function fichaResumo(e){const L=S.admin.lanc||[],LM=doMes(L,S.ano,S.mes),r=relatorioDados(LM),m=S.ano+'-'+pad(S.mes),D=GE.det;
+ const kp=(t,v,s,cl='')=>`<div class="mini ${cl}"><div class="mut">${t}</div><div class="v">${v}</div>${s?`<small class="mut">${s}</small>`:''}</div>`;
+ let loja='';if(e.lojaPDV){if(!D)loja='<p class="mut">Carregando vendas e notas…</p>';else{
+  const V=D.vendas.filter(v=>!v.cancelada&&v.data.startsWith(m)),tv=V.reduce((s,v)=>s+v.total,0);
+  const semNota=e.nfceOn?D.vendas.filter(v=>!v.cancelada&&v.data>=(e.nfceDesde||'9999')&&!(v.nfce&&['autorizada','nfe'].includes(v.nfce.st))).length:null;
+  const nfceM=V.filter(v=>v.nfce&&v.nfce.st==='autorizada').length,N=D.notas.filter(n=>n.data.startsWith(m)),nAut=N.filter(n=>(n.nfe||{}).st==='autorizada').length,nRec=D.notas.filter(n=>['rejeitada','pendente'].includes((n.nfe||{}).st)).length;
+  const baixo=D.prods.filter(p=>p.ativo!==false).flatMap(p=>(p.vars||[]).filter(v=>(+v.est||0)<=1)).length,semNcm=D.prods.filter(p=>p.ativo!==false&&soDig(p.ncm).length!==8).length;
+  loja=`<h3 style="margin:16px 0 8px">Loja</h3><div class="minis">${kp('Vendas no mês',brl(tv),V.length+' venda(s)'+(V.length?' · ticket '+brl(tv/V.length):''))}
+   ${kp('NFC-e no mês',nfceM,e.nfceOn?(semNota?semNota+' venda(s) sem nota':'Nenhuma pendente'):'Emissão desligada na loja',semNota?'al':'')}
+   ${kp('NF-e no mês',nAut,nRec?nRec+' recusada(s) ou pendente(s)':'',nRec?'al':'')}
+   ${kp('Produtos',D.prods.filter(p=>p.ativo!==false).length,[baixo?baixo+' acabando':'',semNcm?semNcm+' sem NCM':''].filter(Boolean).join(' · '),semNcm?'al':'')}</div>
+   <button data-admxml="1" style="margin-top:12px">Baixar XMLs de ${MESES[S.mes-1]} (NFC-e, NF-e e cartas de correção)</button>`}}
+ return `${navMes()}<div class="minis">${kp('Entrou',brl(soma(LM,'in')))}${kp('Saiu',brl(soma(LM,'out')))}${kp('Faturamento',brl(r.comercio[0]+r.comercio[1]+r.industria[0]+r.industria[1]+r.servico[0]+r.servico[1]),'Sem nota: '+brl(r.comercio[0]+r.industria[0]+r.servico[0]))}
+  ${e.mei!==false?kp('Limite do MEI no ano',Math.round(e._pc)+'%',brl(e._fat)+' de '+brl(e._lim),e._pc>=80?'al':''):kp('Faturamento no ano',brl(e._fat),'Simples Nacional')}</div>${loja}`}
+function fichaModulos(e){return `<p class="mut" style="margin-top:0">Ligue só o que o cliente contratou. A mudança aparece para ele na próxima vez que abrir o app.</p>
+ ${MODS.map(([k,t,d])=>`<label class="sw-row"><span><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw" data-gemod="${k}" ${modOn(e,k)?'checked':''}></label>`).join('')}`}
+function fichaEmpresa(e){const f=(n,l,v,x='')=>`<label>${l}<input name="${n}" value="${esc(v||'')}" ${x}></label>`;
+ return `<form id="geemp" class="ge-form">${f('nome','Nome no app',e.nome,'required maxlength="60"')}${f('razao','Razão social',e.razao,'maxlength="80"')}
+  ${f('cnpj','CNPJ',e.cnpj?fmtCNPJ(e.cnpj):'','inputmode="numeric"')}${f('ie','Inscrição Estadual',e.ie,'inputmode="numeric"')}${f('cidade','Cidade',e.cidade)}
+  <label>UF<select name="uf">${UFS.map(u=>`<option ${u===(e.uf||'MS')?'selected':''}>${u}</option>`).join('')}</select></label>
+  <label>Regime<select name="mei"><option value="1" ${e.mei!==false?'selected':''}>MEI</option><option value="0" ${e.mei===false?'selected':''}>Simples Nacional</option></select></label>
+  <label>Tipo de negócio<select name="ramo"><option value="">Não escolhido</option>${Object.entries(RAMOS).map(([k,r])=>`<option value="${k}" ${e.ramo===k?'selected':''}>${esc(r.nome)}</option>`).join('')}</select></label>
+  <div id="geerr" style="grid-column:1/-1"></div><button class="pri" type="submit" style="grid-column:1/-1">Salvar dados da empresa</button></form>`}
+function fichaAcesso(e){const p=e.plano||{},s=stPlano(e);
+ return `<div class="ge-2"><div><h3>Acesso ao app</h3>
+  ${e.bloqueado?`<div class="err" style="margin:8px 0">Bloqueado${e.bloqMotivo?': '+esc(e.bloqMotivo):''}. O cliente vê só uma mensagem para falar com o escritório.</div><button class="pri w" id="gedesbloq">Desbloquear acesso</button>`
+  :`<p class="mut">Ao bloquear, o cliente continua com os dados guardados, mas só vê um aviso para falar com o escritório e não consegue lançar nada.</p>
+   <label>Motivo que o cliente vai ver<input id="gemotivo" maxlength="120" placeholder="Ex.: mensalidade de novembro em aberto"></label><button class="w" id="gebloq" style="margin-top:10px;color:var(--out)">Bloquear acesso</button>`}</div>
+  <div><h3>Mensalidade</h3><form id="geplano" class="ge-form" style="grid-template-columns:1fr 1fr">
+   <label>Valor por mês (R$)<input name="valor" inputmode="decimal" value="${p.valor?(+p.valor).toFixed(2).replace('.',','):''}" placeholder="0,00"></label>
+   <label>Dia do vencimento<input name="dia" inputmode="numeric" value="${esc(p.dia||'10')}" maxlength="2"></label>
+   <button class="pri" type="submit" style="grid-column:1/-1">Salvar mensalidade</button></form>
+   ${+p.valor>0?`<div class="li" style="margin-top:10px"><div><b style="text-transform:capitalize">${MESES[new Date().getMonth()]}</b><div class="d">${s.txt}${p.pagoAte?' · pago até '+p.pagoAte.slice(5)+'/'+p.pagoAte.slice(0,4):''}</div></div>${s.st==='ok'?`<button data-gepago="-1" style="min-height:40px">Desfazer</button>`:`<button class="pri" data-gepago="1" style="min-height:40px">Recebi este mês</button>`}</div>`:''}</div></div>
+ <h3 style="margin-top:16px">Anotações do escritório</h3><p class="mut" style="margin:2px 0 6px">Não aparecem nas telas do cliente.</p>
+ <textarea id="geobs" rows="3" maxlength="1500" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;background:var(--card);color:inherit">${esc(e.obsEsc||'')}</textarea><button id="geobsok" style="margin-top:8px">Salvar anotação</button>`}
+function fichaLanc(e){const LM=doMes(S.admin.lanc||[],S.ano,S.mes).sort((a,b)=>b.data.localeCompare(a.data));
+ return `${navMes()}${LM.length?LM.map(l=>itemLanc(l,false)).join(''):'<p class="mut">Sem lançamentos neste mês.</p>'}`}
+
+async function salvarEsc(uid,dados,msg){const e=S.admin.emps.find(x=>x.uid===uid);dados={...dados,escEm:new Date().toISOString()};
+ try{await API.saveEmp(uid,dados);Object.assign(e,dados);if(dados.mods)e.mods={...(e.mods||{}),...dados.mods};render();toast(msg||'Salvo')}catch(x){toast('Não salvou: '+errMsg(x))}}
+async function carregarDet(uid){GE.det=null;S.admin.sel=uid;const e=S.admin.emps.find(x=>x.uid===uid);if(!e||!e.lojaPDV)return;
+ try{const [vendas,notas,prods]=await Promise.all([API.listVendas(uid,addDia(hoje(),-120)),API.listNotas(uid,addDia(hoje(),-120)),API.listProd(uid)]);if(S.admin.sel===uid){GE.det={vendas,notas,prods};render()}}
+ catch(x){GE.det={vendas:[],notas:[],prods:[]};toast('Não consegui ler as vendas: '+errMsg(x))}}
+
+document.addEventListener('click',async ev=>{if(!S.isAdmin)return;const t=ev.target.closest('button');if(!t)return;const ds=t.dataset,e=S.admin.emps.find(x=>x.uid===S.admin.sel);
+ if(ds.gef){GE.filtro=ds.gef;render();return}
+ if(ds.ver){GE.aba='resumo';carregarDet(ds.ver);return}
+ if(ds.geaba){GE.aba=ds.geaba;render();return}
+ if(!e)return;
+ if(t.id==='gebloq'){const m=($('#gemotivo').value||'').trim()||'Fale com o escritório.';confirmar('Bloquear o acesso de '+esc(e.nome)+'?',()=>salvarEsc(e.uid,{bloqueado:true,bloqMotivo:m.slice(0,120)},'Acesso bloqueado'),'Bloquear');return}
+ if(t.id==='gedesbloq'){salvarEsc(e.uid,{bloqueado:false,bloqMotivo:''},'Acesso liberado');return}
+ if(ds.gepago){const p=e.plano||{},at=mesAtual();let pa;if(ds.gepago==='1')pa=at;else{const d=new Date(at+'-15');d.setMonth(d.getMonth()-1);pa=d.toISOString().slice(0,7)}
+  salvarEsc(e.uid,{plano:{...p,pagoAte:pa}},ds.gepago==='1'?'Mensalidade registrada como recebida':'Pagamento desfeito');return}
+ if(t.id==='geobsok'){salvarEsc(e.uid,{obsEsc:$('#geobs').value.slice(0,1500)},'Anotação salva');return}});
+document.addEventListener('change',ev=>{if(!S.isAdmin)return;const el=ev.target,e=S.admin.emps.find(x=>x.uid===S.admin.sel);
+ if(el.dataset&&el.dataset.gemod&&e){const k=el.dataset.gemod,on=el.checked;salvarEsc(e.uid,k==='loja'?{lojaPDV:on}:{mods:{...(e.mods||{}),[k]:on}},(MODS.find(m=>m[0]===k)||[])[1]+(on?' ligado':' desligado'))}});
+document.addEventListener('input',ev=>{if(!S.isAdmin||ev.target.id!=='gebusca')return;GE.busca=ev.target.value;const p=ev.target.selectionStart;render();const i=$('#gebusca');if(i){i.focus();i.setSelectionRange(p,p)}});
+document.addEventListener('submit',ev=>{if(!S.isAdmin)return;const f=ev.target,e=S.admin.emps.find(x=>x.uid===S.admin.sel);if(!e)return;
+ if(f.id==='geemp'){ev.preventDefault();const d=Object.fromEntries(new FormData(f)),c=soDig(d.cnpj);
+  if(c&&!cnpjOk(c)){$('#geerr').innerHTML='<div class="err">Esse CNPJ não confere. Confira os números.</div>';return}
+  salvarEsc(e.uid,{nome:d.nome.trim().slice(0,60),razao:d.razao.trim().slice(0,80),cnpj:c,ie:soDig(d.ie),cidade:d.cidade.trim().slice(0,60),uf:d.uf,mei:d.mei==='1',ramo:d.ramo},'Dados da empresa salvos');return}
+ if(f.id==='geplano'){ev.preventDefault();const d=Object.fromEntries(new FormData(f)),v=parseValor(d.valor||'0')||0,dia=Math.min(28,Math.max(1,+soDig(d.dia)||10));
+  salvarEsc(e.uid,{plano:{...(e.plano||{}),valor:Math.round(v*100)/100,dia}},'Mensalidade salva');return}},true);
+
+/* lado do cliente: acesso bloqueado */
+function telaBloqueado(){const m=S.emp.bloqMotivo||'Fale com o escritório.';
+ $('#app').innerHTML=`<div class="center"><div class="auth card" style="text-align:center"><div class="logo">JM Gestão<b>+</b></div>
+ <h2 style="margin-top:14px">Acesso pausado</h2><p class="mut">${esc(m)}</p><p>Seus dados estão guardados. Fale com a JM Gestão Contábil para liberar:</p>
+ <a class="pri" href="mailto:contato@jmgestaocontabil.com.br" style="display:flex;align-items:center;justify-content:center;min-height:50px;border-radius:12px;text-decoration:none;font-weight:700">contato@jmgestaocontabil.com.br</a>
+ <button class="w" id="sair" style="margin-top:12px">Sair</button></div></div>`}
 
 if(typeof DEMO!=='undefined'&&DEMO)window.__jm={get S(){return S},get LJ(){return LJ},get NT(){return NT}};
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
@@ -1873,7 +1973,8 @@ function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
- const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda','nfce','nfe']:[])].includes(h)?h:'inicio';
+ if(S.emp.bloqueado)return telaBloqueado();
+ const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda',...(fiscalOk()?['nfce','nfe']:[])]:[])].includes(h)?h:'inicio';
  $('#app').innerHTML=({vender:vVender,produtos:vProdutos,vendas:vVendas,mais:vMais,nfce:vNFCe,nfe:vNFe,inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  if(S.tab==='vender')focoPDV();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
