@@ -66,7 +66,7 @@ label{display:grid;gap:6px;font-size:14px;color:var(--mut);font-weight:500}
 .v.in{color:var(--in)}.v.out{color:var(--out)}
 .x{min-height:36px;width:36px;padding:0;border-radius:10px;font-size:18px;color:var(--mut)}
 .day{font-size:13px;font-weight:600;color:var(--mut);margin-top:14px}
-nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(5,1fr);padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom));z-index:5}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(var(--nt,5),1fr);padding:6px max(6px,env(safe-area-inset-left)) max(6px,env(safe-area-inset-bottom));z-index:5}
 nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;border-radius:12px;color:var(--mut);text-decoration:none;font-size:12px;font-weight:600}
 nav.tabs a.on{color:var(--gold);background:var(--goldsoft)}
 nav.tabs svg{width:24px;height:24px}
@@ -138,7 +138,7 @@ const hoje=()=>{const d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const fmtData=s=>{const [y,m,d]=s.split('-');return d+'/'+m};
 const parseValor=s=>{s=String(s).trim().replace(/[^\d,.-]/g,'');if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');const v=parseFloat(s);return isFinite(v)?Math.round(v*100)/100:NaN};
-const DEMO=!FIREBASE_CONFIG;
+const DEMO=!FIREBASE_CONFIG||/[?&]demo\b/.test(location.search);
 const isAdminEmail=e=>ADMIN_EMAILS.map(x=>x.toLowerCase()).includes(String(e||'').toLowerCase());
 
 /* Categorias. fat:true = entra no faturamento do MEI; ativ = linha do relatório mensal */
@@ -180,6 +180,11 @@ function seedDemo(){
  demoStore.set('emp_demo-2',{uid:'demo-2',nome:'Auto Elétrica Silva',email:'silva@exemplo.com',tipo:'ambos',abertura:'2022-06',dicas:{},criadoEm:hoje()});
  demoStore.set('lanc_demo-2',Array.from({length:m*4},(_,i)=>({id:'s'+i,tipo:'in',cat:i%2?'servico':'venda',valor:1500+((i*137)%900),forma:'Pix',nota:true,desc:'',data:y+'-'+pad(Math.floor(i/4)+1)+'-'+pad(3+(i%4)*6)})));
  demoStore.set('convites',[{email:'bella@exemplo.com',nome:'Studio Bella Estética',em:hoje()},{email:'silva@exemplo.com',nome:'Auto Elétrica Silva',em:hoje()},{email:'novocliente@exemplo.com',nome:'Doce Sabor',em:hoje()}]);
+ demoStore.set('emp_demo-loja',{uid:'demo-loja',nome:'Joia Modas (exemplo)',email:'loja@exemplo.com',tipo:'comercio',abertura:'2023-02',dasLembrete:true,dicas:{},criadoEm:hoje()});
+ const LL=[];let j=1;for(let mm=1;mm<=m;mm++){const k=mm===m?Math.min(new Date().getDate(),28):28;for(let d=1;d<=k;d+=2)LL.push({id:'l'+(j++),tipo:'in',cat:'venda',valor:[89.9,159.8,59.9,219.7,120][d%5],forma:FORMAS[d%3],nota:false,desc:'Venda',data:y+'-'+pad(mm)+'-'+pad(d)});if(k>=6)LL.push({id:'l'+(j++),tipo:'out',cat:'mercadoria',valor:[650,480,720][mm%3],forma:'Pix',nota:false,desc:'Compra de mercadoria',data:y+'-'+pad(mm)+'-06'});if(k>=10)LL.push({id:'l'+(j++),tipo:'out',cat:'aluguel',valor:800,forma:'Pix',nota:false,desc:'Aluguel da loja',data:y+'-'+pad(mm)+'-10'})}
+ demoStore.set('lanc_demo-loja',LL);
+ const h0=hoje(),pp=(base,n,v,pagas)=>[...Array(n)].map((_,i)=>{const d=addMes(base,i);return{n:i+1,venc:d,valor:v,pago:i<pagas,dataPag:i<pagas?d:undefined}});
+ demoStore.set('cr_demo-loja',[{id:'c1',cli:'Ana Paula',fone:'67999990001',desc:'Vestido e sandália',total:300,entrada:0,data:addMes(h0,-2),parcelas:pp(addMes(h0,-2),3,100,1)},{id:'c2',cli:'Cláudia Ribeiro',fone:'67999990002',desc:'2 calças jeans',total:360,entrada:60,data:addMes(h0,-1),parcelas:pp(addDia(h0,5),3,100,0)},{id:'c3',cli:'Marina Lopes',fone:'',desc:'Blusas',total:150,entrada:0,data:addDia(h0,-10),parcelas:pp(addDia(h0,20),2,75,0)}]);
  demoStore.set('seeded',true);
 }
 const API={
@@ -237,6 +242,16 @@ const API={
   if(DEMO){demoStore.set('ag_'+uid,demoStore.get('ag_'+uid,[]).map(x=>x.id===id?{...x,...a}:x));return}
   await db.collection('empresas').doc(uid).collection('agenda').doc(id).update(a)},
  async delAgenda(uid,id){if(DEMO){demoStore.set('ag_'+uid,demoStore.get('ag_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('agenda').doc(id).delete()},
+ async listCred(uid){
+  if(DEMO)return demoStore.get('cr_'+uid,[]);
+  const q=await db.collection('empresas').doc(uid).collection('cred').get();return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async addCred(uid,c){
+  if(DEMO){const L=demoStore.get('cr_'+uid,[]);const n={...c,id:'c'+Date.now()};L.push(n);demoStore.set('cr_'+uid,L);return n}
+  const r=await db.collection('empresas').doc(uid).collection('cred').add({...c,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...c,id:r.id}},
+ async updCred(uid,id,c){
+  if(DEMO){demoStore.set('cr_'+uid,demoStore.get('cr_'+uid,[]).map(x=>x.id===id?{...x,...c}:x));return}
+  await db.collection('empresas').doc(uid).collection('cred').doc(id).update(c)},
+ async delCred(uid,id){if(DEMO){demoStore.set('cr_'+uid,demoStore.get('cr_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('cred').doc(id).delete()},
  async listEmps(){
   if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
    return ks.filter((k,i,a)=>k.startsWith('emp_')&&a.indexOf(k)===i).map(k=>demoStore.get(k,null)).filter(Boolean)}
@@ -296,6 +311,7 @@ function telaLogin(modo='entrar',msg=''){
    ${msg}
    <button class="pri w" type="submit">${t[1]}</button>
   </form>
+  ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-loja">Loja de roupas</button><button data-demoent="demo-mei">Salão / estética</button></div></div>`:''}
   <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:10px">
    ${modo!=='entrar'?'<button class="lnk" data-modo="entrar">Já tenho acesso</button>':'<button class="lnk" data-modo="criar">Primeiro acesso</button>'}
    ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}
@@ -345,12 +361,14 @@ const IC={
  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
  extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
  relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ fiado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
  agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
+function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']]}
 function shell(inner){
  return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><button id="sair">Sair</button></div></header>
  <main class="wrap">${inner}</main>
- <nav class="tabs" aria-label="Menu">${[['inicio','Início'],['agenda','Agenda'],['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']].map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
+ <nav class="tabs" aria-label="Menu" style="--nt:${abas().length}">${abas().map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
 
 function vInicio(){
  const a=S.ano,m=S.mes,LM=doMes(S.lanc,new Date().getFullYear(),new Date().getMonth()+1);
@@ -364,7 +382,8 @@ function vInicio(){
  <div class="card saldo"><div class="l">Saldo de ${MESES[new Date().getMonth()]}</div><div class="big">${brl(ent-sai)}</div>
   <div class="row"><span>Entrou <b>${brl(ent)}</b></span><span>Saiu <b>${brl(sai)}</b></span></div></div>
  <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
- ${(()=>{const L=doDia(hoje()).filter(a=>a.status!=='faltou');if(!L.length&&!servicos().length&&S.emp.tipo!=='servico')return'';const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
+ ${(()=>{if(!usaAgenda())return'';const L=doDia(hoje()).filter(a=>a.status!=='faltou');const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
+ ${usaCred()?(()=>{const r=resumoCred();return `<a href="#fiado" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Crediário</b><div class="mut">${r.rec?brl(r.rec)+' a receber'+(r.atr?' · <b style="color:var(--out)">'+brl(r.atr)+' atrasado</b>':''):'Ninguém devendo'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
  ${dica('inicio')}
  ${S.emp.dasLembrete?`<div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
   <div style="flex:1 1 220px"><h3>Imposto do mês (DAS)</h3><p class="mut" style="margin:4px 0 0">${das.txt}</p></div>
@@ -629,13 +648,109 @@ document.addEventListener('click',async e=>{
   try{await API.saveEmp(S.user.uid,{servicos:sv,retornoDias:rd});S.emp.servicos=sv;S.emp.retornoDias=rd;fecharSheet();AG.sh=null;render();toast('Serviços salvos')}catch(err){toast(errMsg(err))}return}
 });
 
+/* ===================== CREDIÁRIO / FIADO (loja) ===================== */
+const CR={lista:[],ok:false,sh:null};
+const addMes=(d,n)=>{const [y,m,dd]=d.split('-').map(Number);const x=new Date(y,m-1+n,1);const ult=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();return x.getFullYear()+'-'+pad(x.getMonth()+1)+'-'+pad(Math.min(dd,ult))};
+async function carregarCred(){if(!S.user||S.isAdmin)return;try{CR.lista=await API.listCred(S.user.uid);CR.ok=true}catch(e){CR.ok=false}}
+const abertas=c=>(c.parcelas||[]).filter(p=>!p.pago);
+const saldoCred=c=>abertas(c).reduce((s,p)=>s+(+p.valor||0),0);
+function resumoCred(){const h=hoje(),sem=addDia(h,7);let rec=0,atr=0,semana=0,nAtr=new Set();
+ for(const c of CR.lista)for(const p of abertas(c)){rec+=+p.valor||0;if(p.venc<h){atr+=+p.valor||0;nAtr.add(c.cli.toLowerCase())}else if(p.venc<=sem)semana+=+p.valor||0}
+ return{rec,atr,semana,nAtr:nAtr.size}}
+const usaCred=()=>S.emp&&(S.emp.tipo==='comercio'||S.emp.tipo==='ambos'||CR.lista.length>0);
+const usaAgenda=()=>S.emp&&(S.emp.tipo==='servico'||S.emp.tipo==='ambos'||AG.lista.length>0);
+function vFiado(){
+ const r=resumoCred(),h=hoje();
+ /* agrupa por cliente */
+ const G={};for(const c of CR.lista){const k=c.cli.trim().toLowerCase();(G[k]=G[k]||{cli:c.cli,fone:c.fone,vendas:[]}).vendas.push(c);if(c.fone)G[k].fone=c.fone}
+ const cls=Object.values(G).map(g=>{const ps=g.vendas.flatMap(v=>abertas(v));return{...g,saldo:ps.reduce((s,p)=>s+(+p.valor||0),0),prox:ps.map(p=>p.venc).sort()[0]||'',atr:ps.filter(p=>p.venc<h).reduce((s,p)=>s+(+p.valor||0),0)}}).filter(g=>g.saldo>0||S._crTodos).sort((a,b)=>(b.atr>0)-(a.atr>0)||(a.prox||'9').localeCompare(b.prox||'9'));
+ const quitadas=Object.values(G).filter(g=>!g.vendas.some(v=>abertas(v).length)).length;
+ return shell(`
+  <div class="card saldo"><div class="l">Crediário · tenho a receber</div><div class="big">${brl(r.rec)}</div>
+   <div class="row"><span>Atrasado <b>${brl(r.atr)}</b></span><span>Vence em 7 dias <b>${brl(r.semana)}</b></span></div></div>
+  <button class="pri w" data-crnovo="1" style="margin-top:14px;min-height:56px;font-size:17px">+ Venda no crediário</button>
+  ${r.nAtr?`<div class="tip"><b>!</b><p>${r.nAtr} cliente(s) com parcela atrasada. Toque na cliente e em "Cobrar no WhatsApp": a mensagem já vai pronta.</p></div>`:''}
+  <div class="card">${cls.length?cls.map(g=>`<button data-crcli="${esc(g.cli)}" class="li" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:12px 0;min-height:0">
+   <div><b>${esc(g.cli)}</b><div class="d">${g.saldo?(g.atr?`<span class="pill p-out">atrasado ${brl(g.atr)}</span> `:'')+(g.prox?'próxima: '+dBR(g.prox):''):'quitado'}</div></div><div class="v ${g.atr?'out':''}">${brl(g.saldo)}</div></button>`).join('')
+   :`<p class="mut" style="margin:0">Ninguém devendo. Quando vender a prazo, toque em "+ Venda no crediário": o app guarda as parcelas, avisa os vencimentos e ajuda a cobrar.</p>`}
+   ${quitadas?`<button class="lnk" data-crtodos="1">${S._crTodos?'Esconder quem já quitou':'Mostrar também quem já quitou ('+quitadas+')'}</button>`:''}</div>`);
+}
+function sheetCr(h){$('#sbox').innerHTML=h;$('#sheet').classList.add('on')}
+function abrirVendaCred(){CR.sh={cli:'',fone:'',desc:'',total:'',entrada:'',n:'3',venc:addMes(hoje(),1),forma:'Dinheiro'};renderVendaCred()}
+function renderVendaCred(){const s=CR.sh,tot=parseValor(s.total||'0'),ent=parseValor(s.entrada||'0'),n=Math.max(1,parseInt(s.n)||1),resto=(isFinite(tot)?tot:0)-(isFinite(ent)?ent:0);
+ const nomes=[...new Set([...CR.lista.map(c=>c.cli),...clientesAg().map(c=>c.nome)])];
+ sheetCr(`<div class="hd"><h2>Venda no crediário</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <div class="stack">
+   <label>Cliente<input id="crcli" list="crclis" value="${esc(s.cli)}" placeholder="Nome da cliente" autocomplete="off"></label><datalist id="crclis">${nomes.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+   <label>WhatsApp<input id="crfone" type="tel" inputmode="tel" value="${esc(s.fone)}" placeholder="(67) 99999-9999"></label>
+   <label>O que levou (opcional)<input id="crdesc" value="${esc(s.desc)}" placeholder="Ex.: 2 blusas e 1 calça" maxlength="60"></label>
+   <label>Valor total da venda (R$)<input id="crtot" inputmode="decimal" value="${esc(s.total)}" placeholder="0,00"></label>
+   <label>Entrada paga agora (R$, opcional)<input id="crent" inputmode="decimal" value="${esc(s.entrada)}" placeholder="0,00"></label>
+   ${ent>0?`<div class="grp" style="margin:0"><div class="t">Como pagou a entrada?</div><div class="chips">${FORMAS.map(f=>`<button class="chip ${s.forma===f?'on':''}" data-crforma="${f}">${f}</button>`).join('')}</div></div>`:''}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px"><label>Parcelas<select id="crn">${[1,2,3,4,5,6,8,10,12].map(k=>`<option ${k===n?'selected':''}>${k}</option>`).join('')}</select></label><label>1º vencimento<input id="crvenc" type="date" value="${esc(s.venc)}"></label></div>
+   ${resto>0?`<div class="ok">${n}× de ${brl(Math.round(resto/n*100)/100)} · todo dia ${s.venc.slice(8,10)}</div>`:''}
+   <div id="crerr"></div>
+   <button class="pri w" data-crsalva="1" style="min-height:54px">Salvar venda</button></div>`);
+ for(const id of ['crtot','crent'])$('#'+id).onchange=()=>{guardaVendaCred();renderVendaCred()};
+ $('#crn').onchange=()=>{guardaVendaCred();renderVendaCred()};
+ const cli=$('#crcli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const c=CR.lista.find(x=>x.cli.toLowerCase()===k&&x.fone)||clientesAg().find(x=>x.nome.toLowerCase()===k&&x.fone);if(c&&!$('#crfone').value)$('#crfone').value=c.fone};
+}
+function guardaVendaCred(){const s=CR.sh;if(!$('#crcli'))return;s.cli=$('#crcli').value;s.fone=$('#crfone').value;s.desc=$('#crdesc').value;s.total=$('#crtot').value;s.entrada=$('#crent').value;s.n=$('#crn').value;s.venc=$('#crvenc').value}
+async function salvarVendaCred(){
+ guardaVendaCred();const s=CR.sh,e=m=>{$('#crerr').innerHTML=`<div class="err">${m}</div>`};
+ const tot=parseValor(s.total),ent=s.entrada?parseValor(s.entrada):0,n=Math.max(1,parseInt(s.n)||1);
+ if(!s.cli.trim())return e('Digite o nome da cliente.');if(!(tot>0))return e('Digite o valor total da venda.');if(!(ent>=0)||ent>=tot)return e('A entrada precisa ser menor que o total.');if(!s.venc)return e('Escolha o 1º vencimento.');
+ const resto=Math.round((tot-ent)*100),base=Math.floor(resto/n),parcelas=[...Array(n)].map((_,i)=>({n:i+1,venc:addMes(s.venc,i),valor:(base+(i===n-1?resto-base*n:0))/100,pago:false}));
+ try{
+  let lancEnt=null;if(ent>0){lancEnt=await API.addLanc(S.user.uid,{tipo:'in',valor:ent,cat:'venda',forma:s.forma,nota:false,data:hoje(),desc:('Entrada crediário - '+s.cli.trim()).slice(0,80)});if(hoje().startsWith(S.ano+'-'))S.lanc.push(lancEnt)}
+  const c={cli:s.cli.trim().slice(0,60),fone:s.fone.trim().slice(0,20),desc:s.desc.trim().slice(0,60),total:tot,valor:tot,entrada:ent,data:hoje(),parcelas,lancEnt:lancEnt?.id||null};
+  const nv=await API.addCred(S.user.uid,c);CR.lista.push(nv);fecharSheet();CR.sh=null;render();toast('Venda de '+brl(tot)+' para '+c.cli+' salva: '+n+'× de '+brl(parcelas[0].valor));
+ }catch(err){e(esc(errMsg(err)))}}
+function abrirCliCred(nome){CR.sh={cli:nome,forma:'Dinheiro'};renderCliCred()}
+function renderCliCred(){const nome=CR.sh.cli,k=nome.toLowerCase(),V=CR.lista.filter(c=>c.cli.toLowerCase()===k).sort((a,b)=>b.data.localeCompare(a.data)),h=hoje();
+ const fone=(V.find(v=>v.fone)||{}).fone||'',ab=V.flatMap(v=>abertas(v).map(p=>({...p,vid:v.id})));const saldo=ab.reduce((s,p)=>s+p.valor,0);
+ sheetCr(`<div class="hd"><h2>${esc(nome)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <p style="margin:0 0 6px">Deve <b>${brl(saldo)}</b>${ab.some(p=>p.venc<h)?` · <span class="pill p-out">tem parcela atrasada</span>`:''}</p>
+  ${fone&&saldo?`<button class="w" data-crcobra="1" style="margin:6px 0 4px">Cobrar no WhatsApp</button>`:''}
+  <div class="grp"><div class="t">Quando receber, como pagou?</div><div class="chips">${FORMAS.map(f=>`<button class="chip ${CR.sh.forma===f?'on':''}" data-crpf="${f}">${f}</button>`).join('')}</div></div>
+  ${V.map(v=>`<div class="card" style="padding:12px 14px"><div style="display:flex;justify-content:space-between;gap:8px"><b>${dBR(v.data)} · ${brl(v.total)}</b><button class="x" data-crdel="${v.id}" aria-label="Apagar venda">🗑</button></div>
+   ${v.desc?`<div class="d mut">${esc(v.desc)}</div>`:''}${v.entrada?`<div class="d mut">Entrada ${brl(v.entrada)}</div>`:''}
+   ${(v.parcelas||[]).map(p=>`<div class="li" style="padding:8px 0"><div><b>${p.n}ª</b> · vence ${dBR(p.venc)}${p.pago?` <span class="pill p-in">pago ${p.dataPag?dBR(p.dataPag):''}</span>`:p.venc<h?' <span class="pill p-out">atrasada</span>':''}</div>
+    <div>${p.pago?`<button class="chip" data-crdesf="${v.id}|${p.n}">Desfazer</button>`:`<span class="v" style="margin-right:6px">${brl(p.valor)}</span><button class="chip" data-crrec="${v.id}|${p.n}" style="background:var(--in);border-color:var(--in);color:#fff">Recebi</button>`}</div></div>`).join('')}</div>`).join('')}`)}
+function msgCobra(nome){const k=nome.toLowerCase(),h=hoje();const ab=CR.lista.filter(c=>c.cli.toLowerCase()===k).flatMap(v=>abertas(v)).sort((a,b)=>a.venc.localeCompare(b.venc));
+ const atr=ab.filter(p=>p.venc<h),prox=ab.filter(p=>p.venc>=h)[0];
+ const lin=(atr.length?atr:prox?[prox]:[]).map(p=>`• ${dBR(p.venc)}: ${brl(p.valor)}`).join('\n');
+ return `Oi, ${nome.split(' ')[0]}! Tudo bem? 😊\n${atr.length?'Passando para lembrar da parcela em aberto do crediário:':'Lembrete da próxima parcela do crediário:'}\n${lin}\nPode pagar por Pix ou aqui na loja. Qualquer coisa, me chama!\n${S.emp.nome}`}
+async function receberParcela(vid,n){const v=CR.lista.find(x=>x.id===vid),p=v.parcelas.find(x=>x.n===+n);
+ try{const l=await API.addLanc(S.user.uid,{tipo:'in',valor:p.valor,cat:'venda',forma:CR.sh.forma,nota:false,data:hoje(),desc:(`Crediário ${p.n}/${v.parcelas.length} - ${v.cli}`).slice(0,80)});if(hoje().startsWith(S.ano+'-'))S.lanc.push(l);
+  const ps=v.parcelas.map(x=>x.n===p.n?{...x,pago:true,dataPag:hoje(),forma:CR.sh.forma,lancId:l.id}:x);await API.updCred(S.user.uid,v.id,{parcelas:ps});v.parcelas=ps;renderCliCred();render();toast('Parcela de '+brl(p.valor)+' recebida')}
+ catch(err){toast(errMsg(err))}}
+async function desfazerParcela(vid,n){const v=CR.lista.find(x=>x.id===vid),p=v.parcelas.find(x=>x.n===+n);
+ try{if(p.lancId){await API.delLanc(S.user.uid,p.lancId);S.lanc=S.lanc.filter(x=>String(x.id)!==String(p.lancId))}
+  const ps=v.parcelas.map(x=>x.n===p.n?{n:x.n,venc:x.venc,valor:x.valor,pago:false}:x);await API.updCred(S.user.uid,v.id,{parcelas:ps});v.parcelas=ps;renderCliCred();render();toast('Recebimento desfeito')}
+ catch(err){toast(errMsg(err))}}
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('button');if(!t)return;const ds=t.dataset;
+ if(ds.crnovo){abrirVendaCred();return}
+ if(ds.crforma){guardaVendaCred();CR.sh.forma=ds.crforma;renderVendaCred();return}
+ if(ds.crsalva){salvarVendaCred();return}
+ if(ds.crtodos){S._crTodos=!S._crTodos;render();return}
+ if(ds.crcli){abrirCliCred(ds.crcli);return}
+ if(ds.crpf){CR.sh.forma=ds.crpf;renderCliCred();return}
+ if(ds.crrec){const [v,n]=ds.crrec.split('|');receberParcela(v,n);return}
+ if(ds.crdesf){const [v,n]=ds.crdesf.split('|');confirmar('Desfazer o recebimento desta parcela? Ela sai do caixa.',()=>desfazerParcela(v,n).then(()=>abrirCliCred(CR.sh?.cli||'')),'Desfazer');return}
+ if(ds.crcobra){const nome=CR.sh.cli,k=nome.toLowerCase();const f=(CR.lista.find(c=>c.cli.toLowerCase()===k&&c.fone)||{}).fone;window.open('https://wa.me/'+foneWa(f)+'?text='+encodeURIComponent(msgCobra(nome)),'_blank','noopener');return}
+ if(ds.crdel){const v=CR.lista.find(x=>x.id===ds.crdel);const pagos=(v.parcelas||[]).filter(p=>p.pago).length;
+  confirmar('Apagar esta venda de '+brl(v.total)+'?'+(pagos||v.entrada?' O que já foi recebido continua no caixa.':''),async()=>{try{await API.delCred(S.user.uid,v.id);CR.lista=CR.lista.filter(x=>x!==v);render();toast('Venda apagada')}catch(err){toast(errMsg(err))}});return}
+});
+
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
- const h=location.hash.slice(1);S.tab=['inicio','agenda','extrato','relatorio','ajuda'].includes(h)?h:'inicio';
- $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ const h=location.hash.slice(1);S.tab=abas().map(x=>x[0]).includes(h)?h:'inicio';
+ $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,fiado:vFiado,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
 async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
@@ -646,6 +761,7 @@ function bindAdmin(){
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button,[data-modo]');if(!t)return;const ds=t.dataset;
  if(ds.modo){telaLogin(ds.modo);return}
+ if(ds.demoent){const u={uid:ds.demoent,email:ds.demoent==='demo-loja'?'loja@exemplo.com':'bella@exemplo.com'};demoStore.set('sess',u);iniciar(u);return}
  if(t.id==='sair'){await API.logout();S.user=null;S.emp=null;S.isAdmin=false;location.hash='';if(DEMO)telaLogin();return}
  if(t.id==='obg'){obNext();return}
  if(t.id==='obv'){S.ob.step--;telaOnboarding();return}
@@ -683,7 +799,7 @@ async function iniciar(u){
  $('#app').innerHTML='<div class="center"><p class="mut">Carregando…</p></div>';
  try{
   if(S.isAdmin){await carregarAdmin()}
-  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await carregarAgenda()}}
+  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await Promise.all([carregarAgenda(),carregarCred()])}}
   render()}
  catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div><button class="w" style="margin-top:12px" id="sair">Voltar</button></div></div>`}
 }
