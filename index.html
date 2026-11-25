@@ -1854,13 +1854,14 @@ const MODS=[['loja','Loja completa','Caixa (PDV), produtos com grade, estoque e 
  ['cred','Crediário','Vendas a prazo e contas a receber'],['agenda','Agenda','Horários marcados (salão, barbearia)'],['os','Ordens de serviço','Oficina e assistência técnica']];
 const modOn=(e,k)=>k==='loja'?!!e.lojaPDV:(e.mods&&e.mods[k]!==undefined)?!!e.mods[k]:k==='fiscal'?!!e.lojaPDV:k==='cred'?(e.ramo?e.ramo==='loja':['comercio','ambos'].includes(e.tipo)):k==='agenda'?(e.ramo?['salao','barbearia'].includes(e.ramo):['servico','ambos'].includes(e.tipo)):k==='os'?e.ramo==='oficina':false;
 const mesAtual=()=>hoje().slice(0,7);
-function stPlano(e){const p=e.plano||{};if(!(+p.valor>0))return {st:'sem',txt:'Sem mensalidade'};
+function stPlano(e){const p=e.plano||{};if(p.isentoAte&&p.isentoAte>=mesAtual())return {st:'isento',txt:'Isento até '+p.isentoAte.slice(5)+'/'+p.isentoAte.slice(0,4)};if(!(+p.valor>0))return {st:'sem',txt:'Sem mensalidade'};
  const pago=(p.pagoAte||'')>=mesAtual(),dia=+p.dia||10,hj=+hoje().slice(8,10);
  if(pago)return {st:'ok',txt:'Em dia'};if(hj>dia)return {st:'late',txt:'Atrasada'};return {st:'aberto',txt:'Vence dia '+dia}}
-const pillPlano=e=>{const s=stPlano(e);return `<span class="pill ${s.st==='ok'?'p-in':s.st==='late'?'p-out':s.st==='aberto'?'p-w':'p-g'}">${s.txt}</span>`};
+const pillPlano=e=>{const s=stPlano(e);return `<span class="pill ${s.st==='ok'||s.st==='isento'?'p-in':s.st==='late'?'p-out':s.st==='aberto'?'p-w':'p-g'}">${s.txt}</span>`};
+const cobra=e=>!e.bloqueado&&stPlano(e).st!=='isento'&&+(e.plano||{}).valor>0;
 
 function vAdmin(){const A=S.admin,ano=new Date().getFullYear(),E=A.emps,q=chaveNome(GE.busca);
- const bloq=E.filter(e=>e.bloqueado),ativos=E.filter(e=>!e.bloqueado),mens=ativos.reduce((s,e)=>s+(+(e.plano||{}).valor||0),0);
+ const bloq=E.filter(e=>e.bloqueado),ativos=E.filter(e=>!e.bloqueado),mens=ativos.filter(cobra).reduce((s,e)=>s+(+(e.plano||{}).valor||0),0);
  const atras=ativos.filter(e=>stPlano(e).st==='late'),recebido=ativos.filter(e=>stPlano(e).st==='ok').reduce((s,e)=>s+(+(e.plano||{}).valor||0),0);
  const pend=A.conv.filter(c=>!E.some(e=>(e.email||'').toLowerCase()===c.email));
  const F={todos:()=>true,ativos:e=>!e.bloqueado,bloqueados:e=>e.bloqueado,atrasados:e=>!e.bloqueado&&stPlano(e).st==='late',loja:e=>e.lojaPDV,limite:e=>e.mei!==false&&e._pc>=80};
@@ -1927,8 +1928,9 @@ function fichaAcesso(e){const p=e.plano||{},s=stPlano(e);
   <div><h3>Mensalidade</h3><form id="geplano" class="ge-form" style="grid-template-columns:1fr 1fr">
    <label>Valor por mês (R$)<input name="valor" inputmode="decimal" value="${p.valor?(+p.valor).toFixed(2).replace('.',','):''}" placeholder="0,00"></label>
    <label>Dia do vencimento<input name="dia" inputmode="numeric" value="${esc(p.dia||'10')}" maxlength="2"></label>
-   <button class="pri" type="submit" style="grid-column:1/-1">Salvar mensalidade</button></form>
-   ${+p.valor>0?`<div class="li" style="margin-top:10px"><div><b style="text-transform:capitalize">${MESES[new Date().getMonth()]}</b><div class="d">${s.txt}${p.pagoAte?' · pago até '+p.pagoAte.slice(5)+'/'+p.pagoAte.slice(0,4):''}</div></div>${s.st==='ok'?`<button data-gepago="-1" style="min-height:40px">Desfazer</button>`:`<button class="pri" data-gepago="1" style="min-height:40px">Recebi este mês</button>`}</div>`:''}</div></div>
+   <label style="grid-column:1/-1">Sem mensalidade até (opcional)<input name="isentoAte" type="month" value="${esc(p.isentoAte||'')}"></label>
+   <button class="pri" type="submit" style="grid-column:1/-1">Salvar mensalidade</button></form>${s.st==='isento'?`<div class="ok" style="margin-top:10px">${s.txt}. A cobrança começa em ${(()=>{const d=new Date(p.isentoAte+'-15');d.setMonth(d.getMonth()+1);return MESES[d.getMonth()]+' de '+d.getFullYear()})()}.</div>`:''}
+   ${+p.valor>0&&s.st!=='isento'?`<div class="li" style="margin-top:10px"><div><b style="text-transform:capitalize">${MESES[new Date().getMonth()]}</b><div class="d">${s.txt}${p.pagoAte?' · pago até '+p.pagoAte.slice(5)+'/'+p.pagoAte.slice(0,4):''}</div></div>${s.st==='ok'?`<button data-gepago="-1" style="min-height:40px">Desfazer</button>`:`<button class="pri" data-gepago="1" style="min-height:40px">Recebi este mês</button>`}</div>`:''}</div></div>
  <h3 style="margin-top:16px">Anotações do escritório</h3><p class="mut" style="margin:2px 0 6px">Não aparecem nas telas do cliente.</p>
  <textarea id="geobs" rows="3" maxlength="1500" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;background:var(--card);color:inherit">${esc(e.obsEsc||'')}</textarea><button id="geobsok" style="margin-top:8px">Salvar anotação</button>`}
 function fichaLanc(e){const LM=doMes(S.admin.lanc||[],S.ano,S.mes).sort((a,b)=>b.data.localeCompare(a.data));
@@ -1958,7 +1960,7 @@ document.addEventListener('submit',ev=>{if(!S.isAdmin)return;const f=ev.target,e
   if(c&&!cnpjOk(c)){$('#geerr').innerHTML='<div class="err">Esse CNPJ não confere. Confira os números.</div>';return}
   salvarEsc(e.uid,{nome:d.nome.trim().slice(0,60),razao:d.razao.trim().slice(0,80),cnpj:c,ie:soDig(d.ie),cidade:d.cidade.trim().slice(0,60),uf:d.uf,mei:d.mei==='1',ramo:d.ramo},'Dados da empresa salvos');return}
  if(f.id==='geplano'){ev.preventDefault();const d=Object.fromEntries(new FormData(f)),v=parseValor(d.valor||'0')||0,dia=Math.min(28,Math.max(1,+soDig(d.dia)||10));
-  salvarEsc(e.uid,{plano:{...(e.plano||{}),valor:Math.round(v*100)/100,dia}},'Mensalidade salva');return}},true);
+  const ia=/^\d{4}-\d{2}$/.test(d.isentoAte||'')?d.isentoAte:'';salvarEsc(e.uid,{plano:{...(e.plano||{}),valor:Math.round(v*100)/100,dia,isentoAte:ia}},ia?'Salvo: isento até '+ia.slice(5)+'/'+ia.slice(0,4):'Mensalidade salva');return}},true);
 
 /* lado do cliente: acesso bloqueado */
 function telaBloqueado(){const m=S.emp.bloqMotivo||'Fale com o escritório.';
