@@ -163,7 +163,7 @@ const demoStore={
  get(k,d){return k in mem?mem[k]:(mem[k]=LS.get(k,d))},
  set(k,v){mem[k]=v;LS.set(k,v)}};
 function seedDemo(){
- if(demoStore.get('seeded',false))return;
+ if(demoStore.get('seeded',false)&&demoStore.get('emp_demo-oficina',null))return;
  const y=new Date().getFullYear(),m=new Date().getMonth()+1;
  const emp={uid:'demo-mei',nome:'Studio Bella Estética',email:'bella@exemplo.com',tipo:'servico',abertura:'2024-03',dasLembrete:true,cnpj:'',dicas:{},criadoEm:hoje()};
  const L=[];let id=1;const add=(mm,d,tipo,cat,valor,forma,nota,desc)=>{if(mm<1)return;L.push({id:'d'+(id++),tipo,cat,valor,forma,nota,desc,data:y+'-'+pad(mm)+'-'+pad(d)})};
@@ -185,6 +185,15 @@ function seedDemo(){
  demoStore.set('lanc_demo-loja',LL);
  const h0=hoje(),pp=(base,n,v,pagas)=>[...Array(n)].map((_,i)=>{const d=addMes(base,i);return{n:i+1,venc:d,valor:v,pago:i<pagas,dataPag:i<pagas?d:undefined}});
  demoStore.set('cr_demo-loja',[{id:'c1',cli:'Ana Paula',fone:'67999990001',desc:'Vestido e sandália',total:300,entrada:0,data:addMes(h0,-2),parcelas:pp(addMes(h0,-2),3,100,1)},{id:'c2',cli:'Cláudia Ribeiro',fone:'67999990002',desc:'2 calças jeans',total:360,entrada:60,data:addMes(h0,-1),parcelas:pp(addDia(h0,5),3,100,0)},{id:'c3',cli:'Marina Lopes',fone:'',desc:'Blusas',total:150,entrada:0,data:addDia(h0,-10),parcelas:pp(addDia(h0,20),2,75,0)}]);
+ demoStore.set('emp_demo-barba',{uid:'demo-barba',nome:'Barbearia do Zé (exemplo)',email:'barba@exemplo.com',tipo:'servico',ramo:'barbearia',abertura:'2023-05',dasLembrete:true,dicas:{inicio:true},criadoEm:hoje(),
+  servicos:RAMOS.barbearia.serv.map(([n,p],i)=>({id:'sv'+i,nome:n,preco:p})),clientes:[{nome:'Carlos',fone:'67999991111'},{nome:'Rafael',fone:'67999992222'}]});
+ demoStore.set('lanc_demo-barba',[...Array(new Date().getDate())].map((_,i)=>({id:'b'+i,tipo:'in',cat:'servico',valor:[35,55,25,35,55][i%5],forma:FORMAS[i%3],nota:false,desc:'Corte',data:hoje().slice(0,8)+pad(i+1)})));
+ demoStore.set('ag_demo-barba',[['09:00','Carlos','Corte',35],['10:00','Rafael','Corte + barba',55],['11:30','Bruno','Barba',25],['14:00','Lucas','Corte',35]].map(([h,c,s,v],i)=>({id:'ab'+i,data:hoje(),hora:h,cli:c,fone:i<2?'6799999'+(1111*(i+1)):'',servico:s,valor:v,status:i===0?'feito':'marcado',forma:i===0?'Pix':undefined})));
+ demoStore.set('emp_demo-oficina',{uid:'demo-oficina',nome:'Oficina Silva (exemplo)',email:'oficina@exemplo.com',tipo:'ambos',ramo:'oficina',abertura:'2021-08',dasLembrete:true,dicas:{inicio:true},criadoEm:hoje()});
+ demoStore.set('lanc_demo-oficina',[{id:'o1',tipo:'in',cat:'servico',valor:350,forma:'Pix',nota:false,desc:'Serviço OS #1',data:addDia(hoje(),-3)},{id:'o2',tipo:'in',cat:'venda',valor:420,forma:'Pix',nota:false,desc:'Peças OS #1',data:addDia(hoje(),-3)},{id:'o3',tipo:'out',cat:'mercadoria',valor:280,forma:'Pix',nota:false,desc:'Compra de peças',data:addDia(hoje(),-4)}]);
+ demoStore.set('os_demo-oficina',[{id:'x1',num:1,cli:'João Pereira',fone:'67999993333',veiculo:'Gol 2012',placa:'ABC1D23',problema:'Barulho na suspensão',status:'entregue',data:addDia(hoje(),-5),entregueEm:addDia(hoje(),-3),forma:'Pix',itens:[{tipo:'peca',desc:'Amortecedores dianteiros',valor:420},{tipo:'mao',desc:'Troca dos amortecedores',valor:350}]},
+  {id:'x2',num:2,cli:'Marcos Lima',fone:'67999994444',veiculo:'Hilux 2018',placa:'QWE4R56',problema:'Revisão 60 mil km',status:'pronto',data:addDia(hoje(),-1),itens:[{tipo:'peca',desc:'Óleo e filtros',valor:390},{tipo:'mao',desc:'Revisão',valor:250}]},
+  {id:'x3',num:3,cli:'Paulo Souza',fone:'67999995555',veiculo:'Honda CG 160',placa:'MOT0A12',problema:'Não liga',status:'orcamento',data:hoje(),itens:[{tipo:'peca',desc:'Bateria',valor:210},{tipo:'mao',desc:'Diagnóstico e instalação',valor:60}]}]);
  demoStore.set('seeded',true);
 }
 const API={
@@ -252,6 +261,16 @@ const API={
   if(DEMO){demoStore.set('cr_'+uid,demoStore.get('cr_'+uid,[]).map(x=>x.id===id?{...x,...c}:x));return}
   await db.collection('empresas').doc(uid).collection('cred').doc(id).update(c)},
  async delCred(uid,id){if(DEMO){demoStore.set('cr_'+uid,demoStore.get('cr_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('cred').doc(id).delete()},
+ async listOS(uid){
+  if(DEMO)return demoStore.get('os_'+uid,[]);
+  const q=await db.collection('empresas').doc(uid).collection('os').get();return q.docs.map(d=>({id:d.id,...d.data()}))},
+ async addOS(uid,o){
+  if(DEMO){const L=demoStore.get('os_'+uid,[]);const n={...o,id:'o'+Date.now()};L.push(n);demoStore.set('os_'+uid,L);return n}
+  const r=await db.collection('empresas').doc(uid).collection('os').add({...o,criadoEm:fb.firestore.FieldValue.serverTimestamp()});return {...o,id:r.id}},
+ async updOS(uid,id,o){
+  if(DEMO){demoStore.set('os_'+uid,demoStore.get('os_'+uid,[]).map(x=>x.id===id?{...x,...o}:x));return}
+  await db.collection('empresas').doc(uid).collection('os').doc(id).update(o)},
+ async delOS(uid,id){if(DEMO){demoStore.set('os_'+uid,demoStore.get('os_'+uid,[]).filter(x=>x.id!==id));return}await db.collection('empresas').doc(uid).collection('os').doc(id).delete()},
  async listEmps(){
   if(DEMO){let ks=Object.keys(mem);try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k.startsWith('jmg_'))ks.push(k.slice(4))}}catch(e){}
    return ks.filter((k,i,a)=>k.startsWith('emp_')&&a.indexOf(k)===i).map(k=>demoStore.get(k,null)).filter(Boolean)}
@@ -311,7 +330,7 @@ function telaLogin(modo='entrar',msg=''){
    ${msg}
    <button class="pri w" type="submit">${t[1]}</button>
   </form>
-  ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-loja">Loja de roupas</button><button data-demoent="demo-mei">Salão / estética</button></div></div>`:''}
+  ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-loja">Loja de roupas</button><button data-demoent="demo-mei">Salão / estética</button><button data-demoent="demo-barba">Barbearia</button><button data-demoent="demo-oficina">Oficina</button></div></div>`:''}
   <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:10px">
    ${modo!=='entrar'?'<button class="lnk" data-modo="entrar">Já tenho acesso</button>':'<button class="lnk" data-modo="criar">Primeiro acesso</button>'}
    ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}
@@ -361,10 +380,11 @@ const IC={
  inicio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
  extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
  relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
+ os:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>',
  fiado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
  agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
-function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']]}
+function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os','OS']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']]}
 function shell(inner){
  return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><button id="sair">Sair</button></div></header>
  <main class="wrap">${inner}</main>
@@ -384,6 +404,8 @@ function vInicio(){
  <div class="acts"><button class="act in" data-novo="in">Recebi<small>entrou dinheiro</small></button><button class="act out" data-novo="out">Paguei<small>saiu dinheiro</small></button></div>
  ${(()=>{if(!usaAgenda())return'';const L=doDia(hoje()).filter(a=>a.status!=='faltou');const prox=L.filter(a=>a.status==='marcado');return `<a href="#agenda" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Agenda de hoje</b><div class="mut">${L.length?L.length+' horário(s) · '+brl(L.reduce((s,a)=>s+(+a.valor||0),0))+' previsto':'Nenhum horário marcado'}${prox[0]?' · próximo: '+esc(prox[0].hora)+' '+esc(prox[0].cli):''}</div></div><span class="pill p-g">Abrir</span></div></a>`})()}
  ${usaCred()?(()=>{const r=resumoCred();return `<a href="#fiado" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Crediário</b><div class="mut">${r.rec?brl(r.rec)+' a receber'+(r.atr?' · <b style="color:var(--out)">'+brl(r.atr)+' atrasado</b>':''):'Ninguém devendo'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
+ ${blocoRamo()}
+ ${usaOS()?(()=>{const ab=OS.lista.filter(o=>o.status!=='entregue');return `<a href="#os" class="card" style="display:block;text-decoration:none;color:inherit"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><div><b>Ordens de serviço</b><div class="mut">${ab.length?ab.length+' em aberto · '+brl(ab.reduce((s,o)=>s+totOS(o),0))+(ab.filter(o=>o.status==='pronto').length?' · '+ab.filter(o=>o.status==='pronto').length+' pronta(s)':''):'Nenhuma em aberto'}</div></div><span class="pill p-g">Abrir</span></div></a>`})():''}
  ${dica('inicio')}
  ${S.emp.dasLembrete?`<div class="card" style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">
   <div style="flex:1 1 220px"><h3>Imposto do mês (DAS)</h3><p class="mut" style="margin:4px 0 0">${das.txt}</p></div>
@@ -421,7 +443,7 @@ function vRelatorio(){
   <p class="mut" style="margin-top:12px">Guarde este relatório junto com as notas de compra e de venda do mês. O escritório também recebe uma cópia automaticamente.</p></div>
  <div class="acts"><button id="relcopy">Copiar</button><button class="dk" id="relprint">Imprimir</button></div>`)}
 
-function vAjuda(){
+function vAjuda(){ setTimeout(()=>{const m=$('main');if(m&&!$('#mudaramo')){m.insertAdjacentHTML('afterbegin',`<div class="card" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><div><b>Tipo de negócio</b><div class="mut">${esc((RAMOS[S.emp.ramo]||{}).nome||'Não escolhido')}</div></div><button id="mudaramo">Mudar</button></div>`)}},0);
  const itens=[['Como lançar um recebimento','Toque em <b>Recebi</b>, digite o valor, escolha o que foi (venda ou serviço) e como recebeu. Se emitiu nota, marque "Sim".'],
   ['Como lançar uma despesa','Toque em <b>Paguei</b>, digite o valor e escolha o tipo. A retirada para você também entra aqui, assim o saldo fica certo.'],
   ['O que é o limite do MEI','É o máximo que o MEI pode faturar no ano. Só conta o que você vendeu ou o serviço que prestou. Empréstimos não contam.'],
@@ -463,7 +485,7 @@ async function salvarLanc(){
  catch(err){b.disabled=false;e(esc(errMsg(err)))}}
 function fecharSheet(){$('#sheet').classList.remove('on');S.sh=null}
 function confirmar(txt,acao,rotulo='Apagar'){
- S.sh=null;$('#sbox').innerHTML=`<h2>${txt}</h2><p class="mut">Não dá para desfazer.</p><div class="acts"><button id="shx">Cancelar</button><button class="dk" id="cfok" style="background:var(--out);border-color:var(--out)">${rotulo}</button></div>`;
+ S.sh=null;$('#sbox').innerHTML=`<h2>${txt}</h2>${rotulo==='Desfazer'?'<p class="mut">A OS volta para "Pronto".</p>':'<p class="mut">Não dá para desfazer.</p>'}<div class="acts"><button id="shx">Cancelar</button><button class="dk" id="cfok" style="background:var(--out);border-color:var(--out)">${rotulo}</button></div>`;
  $('#sheet').classList.add('on');$('#cfok').onclick=async()=>{fecharSheet();await acao()}}
 
 /* ===================== PAINEL DO ESCRITÓRIO ===================== */
@@ -657,8 +679,8 @@ const saldoCred=c=>abertas(c).reduce((s,p)=>s+(+p.valor||0),0);
 function resumoCred(){const h=hoje(),sem=addDia(h,7);let rec=0,atr=0,semana=0,nAtr=new Set();
  for(const c of CR.lista)for(const p of abertas(c)){rec+=+p.valor||0;if(p.venc<h){atr+=+p.valor||0;nAtr.add(c.cli.toLowerCase())}else if(p.venc<=sem)semana+=+p.valor||0}
  return{rec,atr,semana,nAtr:nAtr.size}}
-const usaCred=()=>S.emp&&(S.emp.tipo==='comercio'||S.emp.tipo==='ambos'||CR.lista.length>0);
-const usaAgenda=()=>S.emp&&(S.emp.tipo==='servico'||S.emp.tipo==='ambos'||AG.lista.length>0);
+const usaCred=()=>S.emp&&(S.emp.ramo?S.emp.ramo==='loja':(S.emp.tipo==='comercio'||S.emp.tipo==='ambos'))||CR.lista.length>0;
+const usaAgenda=()=>S.emp&&(S.emp.ramo?['salao','barbearia'].includes(S.emp.ramo):(S.emp.tipo==='servico'||S.emp.tipo==='ambos'))||AG.lista.length>0;
 function vFiado(){
  const r=resumoCred(),h=hoje();
  /* agrupa por cliente */
@@ -744,13 +766,118 @@ document.addEventListener('click',async e=>{
   confirmar('Apagar esta venda de '+brl(v.total)+'?'+(pagos||v.entrada?' O que já foi recebido continua no caixa.':''),async()=>{try{await API.delCred(S.user.uid,v.id);CR.lista=CR.lista.filter(x=>x!==v);render();toast('Venda apagada')}catch(err){toast(errMsg(err))}});return}
 });
 
+/* ===================== RAMOS (tipo de negócio) ===================== */
+const RAMOS={salao:{nome:'Salão / estética',serv:[['Manicure',35],['Pedicure',35],['Pé e mão',60],['Escova',50],['Corte feminino',70],['Design de sobrancelha',30]]},
+ barbearia:{nome:'Barbearia',serv:[['Corte',35],['Barba',25],['Corte + barba',55],['Sobrancelha',10],['Pezinho',10],['Pigmentação',40]]},
+ oficina:{nome:'Oficina'},loja:{nome:'Loja de roupas'},outro:{nome:'Outro'}};
+function blocoRamo(){if(S.emp.ramo)return'';return `<div class="card"><h3>Qual é o seu negócio?</h3><p class="mut" style="margin:4px 0 10px">O app mostra as telas certas para você.</p><div class="chips">${Object.entries(RAMOS).map(([k,r])=>`<button class="chip" data-ramo="${k}">${r.nome}</button>`).join('')}</div></div>`}
+async function escolherRamo(k){const up={ramo:k};
+ if(RAMOS[k].serv&&!servicos().length)up.servicos=RAMOS[k].serv.map(([n,p])=>({id:uidL(),nome:n,preco:p}));
+ if(k==='oficina'&&!S.emp.tipo)up.tipo='ambos';
+ try{await API.saveEmp(S.user.uid,up);Object.assign(S.emp,up);fecharSheet();render();toast('Pronto! Telas ajustadas para '+RAMOS[k].nome.toLowerCase())}catch(err){toast(errMsg(err))}}
+/* ===================== ORDENS DE SERVIÇO (oficina) ===================== */
+const OS={lista:[],ok:false,sh:null,filtro:'abertas'};
+const OS_ST={orcamento:['Orçamento','p-g'],aprovado:['Aprovado','p-w'],pronto:['Pronto','p-in'],entregue:['Entregue','p-in']};
+const totOS=o=>(o.itens||[]).reduce((s,i)=>s+(+i.valor||0),0);
+async function carregarOS(){if(!S.user||S.isAdmin)return;try{OS.lista=await API.listOS(S.user.uid);OS.ok=true}catch(e){OS.ok=false}}
+const usaOS=()=>S.emp&&(S.emp.ramo==='oficina'||OS.lista.length>0);
+function vOS(){
+ const ab=OS.lista.filter(o=>o.status!=='entregue'),prontas=ab.filter(o=>o.status==='pronto');
+ const L=(OS.filtro==='abertas'?ab:OS.lista.filter(o=>o.status==='entregue')).sort((a,b)=>(b.num||0)-(a.num||0));
+ const mes=hoje().slice(0,7),entMes=OS.lista.filter(o=>o.status==='entregue'&&(o.entregueEm||'').startsWith(mes));
+ return shell(`
+  <div class="card saldo"><div class="l">Ordens de serviço</div><div class="big">${ab.length} em aberto</div>
+   <div class="row"><span>Em aberto <b>${brl(ab.reduce((s,o)=>s+totOS(o),0))}</b></span><span>Entregue no mês <b>${brl(entMes.reduce((s,o)=>s+totOS(o),0))}</b></span></div></div>
+  <button class="pri w" data-osnovo="1" style="margin-top:14px;min-height:56px;font-size:17px">+ Nova ordem de serviço</button>
+  ${prontas.length?`<div class="tip"><b>!</b><p>${prontas.length} veículo(s) pronto(s) esperando o cliente. Abra a OS e toque em "Avisar que ficou pronto".</p></div>`:''}
+  <div class="yn" style="margin-top:14px"><button class="${OS.filtro==='abertas'?'on':''}" data-osf="abertas">Em aberto (${ab.length})</button><button class="${OS.filtro==='entregues'?'on':''}" data-osf="entregues">Entregues</button></div>
+  <div class="card">${L.length?L.map(o=>`<button data-osver="${o.id}" class="li" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:12px 0;min-height:0">
+   <div><b>#${o.num} · ${esc(o.cli)}</b><div class="d">${esc([o.veiculo,o.placa].filter(Boolean).join(' · '))}</div><span class="pill ${OS_ST[o.status][1]}">${OS_ST[o.status][0]}</span></div><div class="v">${brl(totOS(o))}</div></button>`).join('')
+   :`<p class="mut" style="margin:0">${OS.filtro==='abertas'?'Nenhuma OS em aberto. Toque em "+ Nova ordem de serviço" quando chegar um carro ou moto.':'Nenhuma OS entregue ainda.'}</p>`}</div>`);
+}
+function sheetOS(h){$('#sbox').innerHTML=h;$('#sheet').classList.add('on')}
+function abrirNovaOS(){OS.sh={novo:{cli:'',fone:'',veiculo:'',placa:'',km:'',problema:''}};renderNovaOS()}
+function renderNovaOS(){const s=OS.sh.novo;const nomes=[...new Set([...OS.lista.map(o=>o.cli),...CR.lista.map(c=>c.cli)])];
+ sheetOS(`<div class="hd"><h2>Nova ordem de serviço</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">
+  <label>Cliente<input id="oscli" list="osclis" value="${esc(s.cli)}" placeholder="Nome do cliente" autocomplete="off"></label><datalist id="osclis">${nomes.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+  <label>WhatsApp<input id="osfone" type="tel" inputmode="tel" value="${esc(s.fone)}" placeholder="(67) 99999-9999"></label>
+  <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px"><label>Veículo<input id="osveic" value="${esc(s.veiculo)}" placeholder="Ex.: Gol 2012"></label><label>Placa<input id="osplaca" value="${esc(s.placa)}" placeholder="ABC1D23" style="text-transform:uppercase"></label></div>
+  <label>Km (opcional)<input id="oskm" inputmode="numeric" value="${esc(s.km)}"></label>
+  <label>Problema relatado<input id="osprob" value="${esc(s.problema)}" placeholder="Ex.: barulho na suspensão" maxlength="120"></label>
+  <div id="oserr"></div><button class="pri w" data-ossalva="1" style="min-height:54px">Abrir OS</button></div>`);
+ const cli=$('#oscli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const o=[...OS.lista].reverse().find(x=>x.cli.toLowerCase()===k);if(o){if(!$('#osfone').value)$('#osfone').value=o.fone||'';if(!$('#osveic').value)$('#osveic').value=o.veiculo||'';if(!$('#osplaca').value)$('#osplaca').value=o.placa||''}};
+}
+async function salvarNovaOS(){const g=id=>$(id).value.trim(),e=m=>{$('#oserr').innerHTML=`<div class="err">${m}</div>`};
+ const o={cli:g('#oscli').slice(0,60),fone:g('#osfone').slice(0,20),veiculo:g('#osveic').slice(0,40),placa:g('#osplaca').toUpperCase().slice(0,10),km:g('#oskm').slice(0,10),problema:g('#osprob').slice(0,120),itens:[],status:'orcamento',data:hoje(),num:OS.lista.reduce((m,x)=>Math.max(m,x.num||0),0)+1};
+ if(!o.cli)return e('Digite o nome do cliente.');
+ try{const n=await API.addOS(S.user.uid,o);OS.lista.push(n);OS.sh={id:n.id,forma:'Pix',item:{tipo:'mao',desc:'',valor:''}};render();renderOS();toast('OS #'+o.num+' aberta. Agora coloque as peças e a mão de obra.')}catch(err){e(esc(errMsg(err)))}}
+function abrirOS(id){OS.sh={id,forma:'Pix',item:{tipo:'peca',desc:'',valor:''}};renderOS()}
+function renderOS(){const o=OS.lista.find(x=>x.id===OS.sh.id),it=OS.sh.item,st=o.status,fech=st==='entregue';
+ const pec=(o.itens||[]).filter(i=>i.tipo==='peca'),mao=(o.itens||[]).filter(i=>i.tipo!=='peca');
+ const lin=(i,ix)=>`<div class="li" style="padding:8px 0"><div>${esc(i.desc)}<div class="d">${i.tipo==='peca'?'Peça':'Mão de obra'}</div></div><div style="display:flex;gap:6px;align-items:center"><span class="v">${brl(i.valor)}</span>${fech?'':`<button class="x" data-osidel="${ix}" aria-label="Tirar item">×</button>`}</div></div>`;
+ sheetOS(`<div class="hd"><h2>OS #${o.num} · ${esc(o.cli)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <p class="mut" style="margin:0 0 4px">${esc([o.veiculo,o.placa,o.km?o.km+' km':''].filter(Boolean).join(' · '))}${o.problema?'<br>Problema: '+esc(o.problema):''}</p>
+  <span class="pill ${OS_ST[st][1]}">${OS_ST[st][0]}</span>
+  <div class="card" style="padding:12px 14px">${(o.itens||[]).length?(o.itens||[]).map(lin).join(''):'<p class="mut" style="margin:0">Nenhum item ainda.</p>'}
+   <div class="li" style="padding-top:10px"><div><b>Total</b><div class="d">Peças ${brl(pec.reduce((s,i)=>s+i.valor,0))} · Mão de obra ${brl(mao.reduce((s,i)=>s+i.valor,0))}</div></div><div class="v" style="font-size:20px">${brl(totOS(o))}</div></div></div>
+  ${fech?'':`<div class="grp"><div class="t">Adicionar item</div><div class="yn"><button class="${it.tipo==='peca'?'on':''}" data-ositipo="peca">Peça</button><button class="${it.tipo==='mao'?'on':''}" data-ositipo="mao">Mão de obra</button></div>
+   <div style="display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px"><input id="osidesc" value="${esc(it.desc)}" placeholder="${it.tipo==='peca'?'Ex.: Amortecedor dianteiro':'Ex.: Troca do amortecedor'}" aria-label="Descrição"><input id="osival" inputmode="decimal" value="${esc(it.valor)}" placeholder="R$" aria-label="Valor"></div>
+   <button class="w" data-osiadd="1" style="margin-top:8px">+ Adicionar</button></div>`}
+  <div id="oserr"></div>
+  <div class="stack" style="margin-top:14px">
+   ${st==='orcamento'?`${o.fone?`<button class="w" data-oswa="orc">Mandar orçamento no WhatsApp</button>`:''}<button class="dk w" data-osst="aprovado">Cliente aprovou</button>`:''}
+   ${st==='aprovado'?`<button class="dk w" data-osst="pronto">Ficou pronto</button>`:''}
+   ${st==='pronto'?`${o.fone?`<button class="w" data-oswa="pronto">Avisar que ficou pronto (WhatsApp)</button>`:''}`:''}
+   ${st!=='entregue'&&(o.itens||[]).length?`<div class="grp" style="margin:0"><div class="t">Entregar e receber · como pagou?</div><div class="chips">${[...FORMAS,'Crediário'].map(f=>`<button class="chip ${OS.sh.forma===f?'on':''}" data-osforma="${f}">${f}</button>`).join('')}</div>
+     ${OS.sh.forma==='Crediário'?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px"><label>Parcelas<select id="osparc">${[1,2,3,4,5,6].map(k=>`<option ${k===(OS.sh.parc||2)?'selected':''}>${k}</option>`).join('')}</select></label><label>1º vencimento<input id="osvenc" type="date" value="${OS.sh.venc||addMes(hoje(),1)}"></label></div>`:''}
+     <button class="pri w" data-osentrega="1" style="margin-top:10px;min-height:54px">Entregar e receber ${brl(totOS(o))}</button></div>`:''}
+   ${st==='entregue'?`<p class="mut">Entregue em ${dBR(o.entregueEm||o.data)} · ${esc(o.forma||'')}</p><button class="w" data-osreabre="1">Desfazer entrega</button>`:''}
+   <button class="w" data-osdel="1" style="color:var(--out)">Apagar OS</button></div>`);
+}
+const salvarItensOS=async o=>{await API.updOS(S.user.uid,o.id,{itens:o.itens})};
+function msgOS(o,tipo){const pn=String(o.cli).split(' ')[0],v=[o.veiculo,o.placa].filter(Boolean).join(' ');
+ if(tipo==='pronto')return `Olá, ${pn}! Seu ${v||'veículo'} já está pronto 🚗✅\nTotal: ${brl(totOS(o))}.\nPode vir buscar quando quiser.\n${S.emp.nome}`;
+ return `Olá, ${pn}! Segue o orçamento do ${v||'seu veículo'} (OS #${o.num}):\n${(o.itens||[]).map(i=>`• ${i.desc}: ${brl(i.valor)}`).join('\n')}\nTotal: ${brl(totOS(o))}\nPosso fazer o serviço?\n${S.emp.nome}`}
+async function entregarOS(){const o=OS.lista.find(x=>x.id===OS.sh.id),f=OS.sh.forma,tot=totOS(o);
+ const pec=(o.itens||[]).filter(i=>i.tipo==='peca').reduce((s,i)=>s+i.valor,0),mao=tot-pec,ids=[];
+ try{
+  if(f==='Crediário'){const n=parseInt($('#osparc').value)||1,venc=$('#osvenc').value||addMes(hoje(),1),cent=Math.round(tot*100),b=Math.floor(cent/n);
+   const parcelas=[...Array(n)].map((_,i)=>({n:i+1,venc:addMes(venc,i),valor:(b+(i===n-1?cent-b*n:0))/100,pago:false}));
+   const c=await API.addCred(S.user.uid,{cli:o.cli,fone:o.fone||'',desc:('OS #'+o.num+' '+(o.veiculo||'')).trim().slice(0,60),total:tot,valor:tot,entrada:0,data:hoje(),parcelas,lancEnt:null});CR.lista.push(c);ids.push('cred:'+c.id)}
+  else{for(const [cat,val,nome] of [['venda',pec,'Peças'],['servico',mao,'Serviço']]){if(!(val>0))continue;const l=await API.addLanc(S.user.uid,{tipo:'in',valor:Math.round(val*100)/100,cat,forma:f,nota:false,data:hoje(),desc:(`${nome} OS #${o.num} - ${o.cli}`).slice(0,80)});if(hoje().startsWith(S.ano+'-'))S.lanc.push(l);ids.push(l.id)}}
+  const up={status:'entregue',entregueEm:hoje(),forma:f,lancIds:ids};await API.updOS(S.user.uid,o.id,up);Object.assign(o,up);render();renderOS();
+  toast(f==='Crediário'?'Entregue no crediário: as parcelas estão na aba Crediário':'Recebido '+brl(tot)+': peças como venda e mão de obra como serviço')
+ }catch(err){$('#oserr').innerHTML=`<div class="err">${esc(errMsg(err))}</div>`}}
+async function reabrirOS(){const o=OS.lista.find(x=>x.id===OS.sh.id);
+ try{for(const id of (o.lancIds||[])){if(id.startsWith('cred:')){const cid=id.slice(5);const c=CR.lista.find(x=>x.id===cid);if(c&&c.parcelas.some(p=>p.pago)){toast('Já há parcela recebida no crediário: desfaça por lá antes');return}await API.delCred(S.user.uid,cid);CR.lista=CR.lista.filter(x=>x.id!==cid)}else{await API.delLanc(S.user.uid,id);S.lanc=S.lanc.filter(x=>String(x.id)!==String(id))}}
+  const up={status:'pronto',entregueEm:null,forma:null,lancIds:[]};await API.updOS(S.user.uid,o.id,up);Object.assign(o,up);render();renderOS();toast('Entrega desfeita')}catch(err){toast(errMsg(err))}}
+document.addEventListener('click',async e=>{
+ const t=e.target.closest('button');if(!t)return;const ds=t.dataset;const O=()=>OS.lista.find(x=>x.id===OS.sh?.id);
+ if(ds.ramo){escolherRamo(ds.ramo);return}
+ if(t.id==='mudaramo'){sheetOS(`<div class="hd"><h2>Tipo de negócio</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="chips">${Object.entries(RAMOS).map(([k,r])=>`<button class="chip ${S.emp.ramo===k?'on':''}" data-ramo="${k}">${r.nome}</button>`).join('')}</div>`);return}
+ if(ds.osnovo){abrirNovaOS();return}
+ if(ds.ossalva){salvarNovaOS();return}
+ if(ds.osf){OS.filtro=ds.osf;render();return}
+ if(ds.osver){abrirOS(ds.osver);return}
+ if(ds.ositipo){OS.sh.item={tipo:ds.ositipo,desc:$('#osidesc').value,valor:$('#osival').value};renderOS();return}
+ if(ds.osiadd){const o=O(),d=$('#osidesc').value.trim(),v=parseValor($('#osival').value);if(!d){$('#oserr').innerHTML='<div class="err">Descreva a peça ou o serviço.</div>';return}if(!(v>0)){$('#oserr').innerHTML='<div class="err">Digite o valor.</div>';return}
+  o.itens=[...(o.itens||[]),{tipo:OS.sh.item.tipo,desc:d.slice(0,60),valor:v}];try{await salvarItensOS(o);OS.sh.item={tipo:OS.sh.item.tipo,desc:'',valor:''};render();renderOS()}catch(err){toast(errMsg(err))}return}
+ if(ds.osidel){const o=O();o.itens=o.itens.filter((_,i)=>i!==+ds.osidel);try{await salvarItensOS(o);render();renderOS()}catch(err){toast(errMsg(err))}return}
+ if(ds.oswa){const o=O();window.open('https://wa.me/'+foneWa(o.fone)+'?text='+encodeURIComponent(msgOS(o,ds.oswa)),'_blank','noopener');return}
+ if(ds.osst){const o=O();try{await API.updOS(S.user.uid,o.id,{status:ds.osst});o.status=ds.osst;render();renderOS()}catch(err){toast(errMsg(err))}return}
+ if(ds.osforma){if($('#osparc'))OS.sh.parc=+$('#osparc').value;if($('#osvenc'))OS.sh.venc=$('#osvenc').value;OS.sh.forma=ds.osforma;renderOS();return}
+ if(ds.osentrega){entregarOS();return}
+ if(ds.osreabre){confirmar('Desfazer a entrega? O recebimento sai do caixa.',async()=>{await reabrirOS();},'Desfazer');return}
+ if(ds.osdel){const o=O();confirmar('Apagar a OS #'+o.num+'?'+(o.status==='entregue'?' O que foi recebido continua no caixa.':''),async()=>{try{await API.delOS(S.user.uid,o.id);OS.lista=OS.lista.filter(x=>x!==o);render();toast('OS apagada')}catch(err){toast(errMsg(err))}});return}
+});
+
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
  const h=location.hash.slice(1);S.tab=abas().map(x=>x[0]).includes(h)?h:'inicio';
- $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,fiado:vFiado,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
 async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
@@ -761,7 +888,7 @@ function bindAdmin(){
 document.addEventListener('click',async e=>{
  const t=e.target.closest('button,[data-modo]');if(!t)return;const ds=t.dataset;
  if(ds.modo){telaLogin(ds.modo);return}
- if(ds.demoent){const u={uid:ds.demoent,email:ds.demoent==='demo-loja'?'loja@exemplo.com':'bella@exemplo.com'};demoStore.set('sess',u);iniciar(u);return}
+ if(ds.demoent){const u={uid:ds.demoent,email:ds.demoent.replace('demo-','')+'@exemplo.com'};demoStore.set('sess',u);iniciar(u);return}
  if(t.id==='sair'){await API.logout();S.user=null;S.emp=null;S.isAdmin=false;location.hash='';if(DEMO)telaLogin();return}
  if(t.id==='obg'){obNext();return}
  if(t.id==='obv'){S.ob.step--;telaOnboarding();return}
@@ -799,7 +926,7 @@ async function iniciar(u){
  $('#app').innerHTML='<div class="center"><p class="mut">Carregando…</p></div>';
  try{
   if(S.isAdmin){await carregarAdmin()}
-  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await Promise.all([carregarAgenda(),carregarCred()])}}
+  else{S.emp=await API.getEmp(u.uid);if(S.emp){S.lanc=await API.listLanc(u.uid,S.ano);await Promise.all([carregarAgenda(),carregarCred(),carregarOS()])}}
   render()}
  catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div><button class="w" style="margin-top:12px" id="sair">Voltar</button></div></div>`}
 }
