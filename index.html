@@ -42,6 +42,7 @@ label{display:grid;gap:6px;font-size:14px;color:var(--mut);font-weight:500}
 .wide-top .in{max-width:1100px}
 .brand{font-size:20px;font-weight:700}.brand b{color:var(--gold)}
 .top small{color:#b9c2dc;font-size:13px}
+.top .hbtn{min-height:40px;min-width:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:12px;background:#ffffff18;color:#fff;text-decoration:none;font-weight:700}
 .top button{min-height:40px;background:#ffffff18;border:0;color:#fff;font-size:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px}
 .saldo{background:var(--navy);color:#fff;border:0;margin-top:-10px}
@@ -430,12 +431,13 @@ const IC={
  extrato:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
  relatorio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>',
  os:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>',
+ clientes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.6c2 .7 3.2 2.5 3.6 5.4"/></svg>',
  fiado:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>',
  agenda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
-function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os','OS']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['extrato','Extrato'],['relatorio','Relatório'],['ajuda','Ajuda']]}
+function abas(){return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os','OS']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['clientes','Clientes'],['extrato','Extrato'],['relatorio','Relatório'],...((usaAgenda()?1:0)+(usaOS()?1:0)+(usaCred()?1:0)>=2?[]:[['ajuda','Ajuda']])]}
 function shell(inner){
- return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><button id="sair">Sair</button></div></header>
+ return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><div style="display:flex;gap:8px">${abas().some(t=>t[0]==='ajuda')?'':'<a href="#ajuda" class="hbtn" aria-label="Ajuda">?</a>'}<button id="sair">Sair</button></div></div></header>
  <main class="wrap">${inner}</main>
  <nav class="tabs" aria-label="Menu" style="--nt:${abas().length}">${abas().map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>`}
 
@@ -633,7 +635,7 @@ function renderHorario(){const s=AG.sh;
  sheetAg(`<div class="hd"><h2>${s.id?'Editar horário':'Novo horário'}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
   <div class="stack">
    <label>Cliente<input id="agcli" list="agclis" value="${esc(s.cli)}" placeholder="Nome da cliente" autocomplete="off"></label>
-   <datalist id="agclis">${clientesAg().map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
+   <datalist id="agclis">${todosClientes().map(c=>`<option value="${esc(c.nome)}">`).join('')}</datalist>
    <label>WhatsApp (opcional)<input id="agfone" type="tel" inputmode="tel" value="${esc(s.fone)}" placeholder="(67) 99999-9999"></label>
    <div class="grp" style="margin:0"><div class="t">Serviço</div><div class="chips">${servicos().map(v=>`<button class="chip ${s.servico===v.nome?'on':''}" data-agsv="${esc(v.id)}">${esc(v.nome)}</button>`).join('')}</div>
     <input id="agsvc" value="${esc(s.servico)}" placeholder="${servicos().length?'Ou digite outro serviço':'Ex.: Manicure e pedicure'}" style="margin-top:8px"></div>
@@ -642,7 +644,7 @@ function renderHorario(){const s=AG.sh;
    <label>Observação (opcional)<input id="agobs" value="${esc(s.obs)}" maxlength="80"></label>
    <div id="agerr"></div>
    <button class="pri w" data-agsalva="1" style="min-height:54px">Salvar horário</button></div>`);
- const cli=$('#agcli');cli.oninput=()=>{const c=clientesAg().find(x=>x.nome.toLowerCase()===cli.value.trim().toLowerCase());if(c&&c.fone&&!$('#agfone').value)$('#agfone').value=c.fone};
+ const cli=$('#agcli');cli.oninput=()=>{const c=todosClientes().find(x=>x._k===chaveNome(cli.value));if(c&&c.fone&&!$('#agfone').value)$('#agfone').value=c.fone};
 }
 function guardaHorario(){const s=AG.sh;if(!s||!$('#agcli'))return;s.cli=$('#agcli').value;s.fone=$('#agfone').value;s.servico=$('#agsvc').value;s.data=$('#agdata').value;s.hora=$('#aghora').value;s.valor=$('#agval').value;s.obs=$('#agobs').value}
 async function salvarHorario(){
@@ -654,10 +656,10 @@ async function salvarHorario(){
   if(s.id){await API.updAgenda(S.user.uid,s.id,d);const a=AG.lista.find(x=>x.id===s.id);Object.assign(a,d)}
   else{const n=await API.addAgenda(S.user.uid,{...d,status:'marcado'});AG.lista.push(n)}
   /* guarda a cliente e o serviço para a próxima vez */
-  let cl=clientesAg().slice(),k=d.cli.toLowerCase(),i=cl.findIndex(c=>c.nome.toLowerCase()===k),mud=false;
-  if(i<0){cl.push({nome:d.cli,fone:d.fone});mud=true}else if(d.fone&&cl[i].fone!==d.fone){cl[i]={...cl[i],fone:d.fone};mud=true}
+  let cl=clientesAg().slice(),k=chaveNome(d.cli),i=cl.findIndex(c=>chaveNome(c.nome)===k||(c.ant||[]).some(a=>chaveNome(a)===k)),mud=false;
+  if(i<0){cl.push({nome:d.cli,fone:d.fone});mud=true}else if((d.fone&&cl[i].fone!==d.fone)||cl[i].oculto){const {oculto,...r}=cl[i];cl[i]={...r,fone:d.fone||r.fone};mud=true}
   let sv=servicos().slice();if(d.servico&&!sv.find(x=>x.nome.toLowerCase()===d.servico.toLowerCase())){sv.push({id:uidL(),nome:d.servico,preco:d.valor});mud=true}
-  if(mud){S.emp.clientes=cl.slice(-500);S.emp.servicos=sv.slice(0,40);await API.saveEmp(S.user.uid,{clientes:S.emp.clientes,servicos:S.emp.servicos})}
+  if(mud){S.emp.clientes=cl.slice(-1500);S.emp.servicos=sv.slice(0,40);await API.saveEmp(S.user.uid,{clientes:S.emp.clientes,servicos:S.emp.servicos})}
   AG.dia=d.data;fecharSheet();AG.sh=null;render();toast('Horário de '+d.cli+' salvo: '+diaTxt(d.data).toLowerCase()+' às '+d.hora);
  }catch(err){e(esc(errMsg(err)))}
 }
@@ -750,7 +752,7 @@ function vFiado(){
 function sheetCr(h){$('#sbox').innerHTML=h;$('#sheet').classList.add('on')}
 function abrirVendaCred(){CR.sh={cli:'',fone:'',desc:'',total:'',entrada:'',n:'3',venc:addMes(hoje(),1),forma:'Dinheiro'};renderVendaCred()}
 function renderVendaCred(){const s=CR.sh,tot=parseValor(s.total||'0'),ent=parseValor(s.entrada||'0'),n=Math.max(1,parseInt(s.n)||1),resto=(isFinite(tot)?tot:0)-(isFinite(ent)?ent:0);
- const nomes=[...new Set([...CR.lista.map(c=>c.cli),...clientesAg().map(c=>c.nome)])];
+ const nomes=todosClientes().map(c=>c.nome);
  sheetCr(`<div class="hd"><h2>Venda no crediário</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
   <div class="stack">
    <label>Cliente<input id="crcli" list="crclis" value="${esc(s.cli)}" placeholder="Nome da cliente" autocomplete="off"></label><datalist id="crclis">${nomes.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
@@ -765,7 +767,7 @@ function renderVendaCred(){const s=CR.sh,tot=parseValor(s.total||'0'),ent=parseV
    <button class="pri w" data-crsalva="1" style="min-height:54px">Salvar venda</button></div>`);
  for(const id of ['crtot','crent'])$('#'+id).onchange=()=>{guardaVendaCred();renderVendaCred()};
  $('#crn').onchange=()=>{guardaVendaCred();renderVendaCred()};
- const cli=$('#crcli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const c=CR.lista.find(x=>x.cli.toLowerCase()===k&&x.fone)||clientesAg().find(x=>x.nome.toLowerCase()===k&&x.fone);if(c&&!$('#crfone').value)$('#crfone').value=c.fone};
+ const cli=$('#crcli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const c=CR.lista.find(x=>x.cli.toLowerCase()===k&&x.fone)||(x=>x&&x.fone?x:null)(todosClientes().find(x=>x._k===chaveNome(k)));if(c&&!$('#crfone').value)$('#crfone').value=c.fone};
 }
 function guardaVendaCred(){const s=CR.sh;if(!$('#crcli'))return;s.cli=$('#crcli').value;s.fone=$('#crfone').value;s.desc=$('#crdesc').value;s.total=$('#crtot').value;s.entrada=$('#crent').value;s.n=$('#crn').value;s.venc=$('#crvenc').value}
 async function salvarVendaCred(){
@@ -847,7 +849,7 @@ function vOS(){
 }
 function sheetOS(h){$('#sbox').innerHTML=h;$('#sheet').classList.add('on')}
 function abrirNovaOS(){OS.sh={novo:{cli:'',fone:'',veiculo:'',placa:'',km:'',problema:''}};renderNovaOS()}
-function renderNovaOS(){const s=OS.sh.novo;const nomes=[...new Set([...OS.lista.map(o=>o.cli),...CR.lista.map(c=>c.cli)])];
+function renderNovaOS(){const s=OS.sh.novo;const nomes=todosClientes().map(c=>c.nome);
  sheetOS(`<div class="hd"><h2>Nova ordem de serviço</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">
   <label>Cliente<input id="oscli" list="osclis" value="${esc(s.cli)}" placeholder="Nome do cliente" autocomplete="off"></label><datalist id="osclis">${nomes.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
   <label>WhatsApp<input id="osfone" type="tel" inputmode="tel" value="${esc(s.fone)}" placeholder="(67) 99999-9999"></label>
@@ -855,7 +857,7 @@ function renderNovaOS(){const s=OS.sh.novo;const nomes=[...new Set([...OS.lista.
   <label>Km (opcional)<input id="oskm" inputmode="numeric" value="${esc(s.km)}"></label>
   <label>Problema relatado<input id="osprob" value="${esc(s.problema)}" placeholder="Ex.: barulho na suspensão" maxlength="120"></label>
   <div id="oserr"></div><button class="pri w" data-ossalva="1" style="min-height:54px">Abrir OS</button></div>`);
- const cli=$('#oscli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const o=[...OS.lista].reverse().find(x=>x.cli.toLowerCase()===k);if(o){if(!$('#osfone').value)$('#osfone').value=o.fone||'';if(!$('#osveic').value)$('#osveic').value=o.veiculo||'';if(!$('#osplaca').value)$('#osplaca').value=o.placa||''}};
+ const cli=$('#oscli');cli.oninput=()=>{const k=cli.value.trim().toLowerCase();const o=[...OS.lista].reverse().find(x=>x.cli.toLowerCase()===k)||(c=>c&&{fone:c.fone,veiculo:((c.veiculos||[])[0]||{}).veiculo,placa:((c.veiculos||[])[0]||{}).placa})(todosClientes().find(x=>x._k===chaveNome(k)));if(o){if(!$('#osfone').value)$('#osfone').value=o.fone||'';if(!$('#osveic').value)$('#osveic').value=o.veiculo||'';if(!$('#osplaca').value)$('#osplaca').value=o.placa||''}};
 }
 async function salvarNovaOS(){const g=id=>$(id).value.trim(),e=m=>{$('#oserr').innerHTML=`<div class="err">${m}</div>`};
  const o={cli:g('#oscli').slice(0,60),fone:g('#osfone').slice(0,20),veiculo:g('#osveic').slice(0,40),placa:g('#osplaca').toUpperCase().slice(0,10),km:g('#oskm').slice(0,10),problema:g('#osprob').slice(0,120),itens:[],status:'orcamento',data:hoje(),num:OS.lista.reduce((m,x)=>Math.max(m,x.num||0),0)+1};
@@ -921,13 +923,85 @@ document.addEventListener('click',async e=>{
  if(ds.osdel){const o=O();confirmar('Apagar a OS #'+o.num+'?'+(o.status==='entregue'?' O que foi recebido continua no caixa.':''),async()=>{try{await API.delOS(S.user.uid,o.id);OS.lista=OS.lista.filter(x=>x!==o);render();toast('OS apagada')}catch(err){toast(errMsg(err))}});return}
 });
 
+/* ===================== CLIENTES (lista única) ===================== */
+const CL={busca:'',sh:null};
+const chaveNome=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+const cadCli=()=>S.emp.clientes||[];
+// junta o cadastro com quem já apareceu na agenda, no crediário e nas OS
+function todosClientes(){const M=new Map(),ali=new Map();
+ for(const c of cadCli()){const k=chaveNome(c.nome);M.set(k,{...c,_k:k,_cad:true});for(const a of (c.ant||[]))ali.set(chaveNome(a),k)}
+ const ach=n=>{const k0=chaveNome(n);const k=ali.get(k0)||k0;if(!k)return null;if(!M.has(k))M.set(k,{nome:String(n).trim(),fone:'',_k:k});return M.get(k)};
+ const fone=(c,f)=>{if(c&&f&&!c.fone)c.fone=f};
+ for(const a of AG.lista){const c=ach(a.cli);fone(c,a.fone);if(c&&a.data>(c._ult||''))c._ult=a.data}
+ for(const v of CR.lista){const c=ach(v.cli);fone(c,v.fone);if(c&&v.data>(c._ult||''))c._ult=v.data;if(c)c._deve=(c._deve||0)+saldoCred(v)}
+ for(const o of OS.lista){const c=ach(o.cli);fone(c,o.fone);if(c&&o.data>(c._ult||''))c._ult=o.data;if(c&&o.placa&&!(c.veiculos||[]).some(v=>v.placa===o.placa))c.veiculos=[...(c.veiculos||[]),{veiculo:o.veiculo||'',placa:o.placa}]}
+ return [...M.values()].filter(c=>!c.oculto||(c._ult&&c._ult>(c.ocultoEm||''))).sort((a,b)=>a.nome.localeCompare(b.nome,'pt'))}
+const doCliente=(c,lista,campo='cli')=>{const ks=new Set([c._k,...(c.ant||[]).map(chaveNome)]);return lista.filter(x=>ks.has(chaveNome(x[campo])))};
+const podeContatos=()=>'contacts' in navigator&&'ContactsManager' in window;
+function vClientes(){const T=todosClientes(),q=chaveNome(CL.busca);
+ const L=q?T.filter(c=>chaveNome(c.nome).includes(q)||soDig(c.fone).includes(soDig(q)||'#')||(c.veiculos||[]).some(v=>chaveNome(v.placa).includes(q))):T;
+ return shell(`<h1>Clientes</h1>
+  <div style="display:grid;grid-template-columns:${podeContatos()?'1fr 1fr':'1fr'};gap:10px"><button class="pri" id="clnovo" style="min-height:52px">+ Cliente</button>${podeContatos()?'<button id="climport" style="min-height:52px">Puxar do celular</button>':''}</div>
+  <input id="clbusca" type="search" value="${esc(CL.busca)}" placeholder="Buscar por nome, telefone${S.emp.ramo==='oficina'?' ou placa':''}" style="margin-top:12px" aria-label="Buscar cliente">
+  <p class="mut" style="margin:10px 2px 0;font-size:14px">${T.length} cliente(s)${q?' · '+L.length+' encontrado(s)':''}</p>
+  <div class="card" id="cllista">${L.length?L.map(c=>`<button data-clver="${esc(c._k)}" class="li" style="width:100%;text-align:left;border:0;border-bottom:1px solid var(--line);border-radius:0;background:none;padding:12px 0;min-height:0">
+   <div><b>${esc(c.nome)}</b><div class="d">${esc([c.fone?fmtFone(c.fone):'sem WhatsApp',(c.veiculos||[]).map(v=>v.placa).join(', '),c._ult?'última vez '+dBR(c._ult):''].filter(Boolean).join(' · '))}</div></div>${c._deve>0?`<div class="v out">${brl(c._deve)}</div>`:''}</button>`).join('')
+   :`<p class="mut" style="margin:0">${q?'Ninguém com esse nome.':'Nenhum cliente ainda. Toque em "+ Cliente"'+(podeContatos()?' ou "Puxar do celular"':'')+'. Quem você marcar na agenda, vender no crediário ou atender numa OS entra aqui sozinho.'}</p>`}</div>`)}
+const fmtFone=f=>{const d=soDig(f).replace(/^55(?=\d{10,11}$)/,'');return d.length===11?`(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`:d.length===10?`(${d.slice(0,2)}) ${d.slice(2,6)}-${d.slice(6)}`:f};
+async function salvarCadCli(lista){lista=lista.slice(-1500);await API.saveEmp(S.user.uid,{clientes:lista});S.emp.clientes=lista}
+function abrirCliente(k){const c=todosClientes().find(x=>x._k===k);if(!c)return;CL.sh={k};
+ const ag=doCliente(c,AG.lista).sort((a,b)=>b.data.localeCompare(a.data)),cr=doCliente(c,CR.lista),os=doCliente(c,OS.lista).sort((a,b)=>(b.num||0)-(a.num||0));
+ const gastoAg=ag.filter(a=>a.status==='feito').reduce((s,a)=>s+(+a.valor||0),0);
+ $('#sbox').innerHTML=`<div class="hd"><h2>${esc(c.nome)}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div>
+  <p class="mut" style="margin:0">${c.fone?esc(fmtFone(c.fone)):'Sem WhatsApp cadastrado'}${c.obs?'<br>'+esc(c.obs):''}</p>
+  ${(c.veiculos||[]).length?`<p class="mut" style="margin:6px 0 0">Veículos: ${c.veiculos.map(v=>esc([v.veiculo,v.placa].filter(Boolean).join(' '))).join(' · ')}</p>`:''}
+  <div style="display:grid;grid-template-columns:${c.fone?'1fr 1fr':'1fr'};gap:10px;margin-top:12px">${c.fone?`<a class="pri" href="https://wa.me/${foneWa(c.fone)}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;border-radius:12px;border:1px solid var(--gold);font-weight:600">WhatsApp</a>`:''}<button id="cledit" style="min-height:48px">Editar</button></div>
+  ${ag.length?`<div class="grp"><div class="t">Agenda (últimos meses)</div><p style="margin:4px 0">${ag.filter(a=>a.status==='feito').length} atendimento(s) · ${brl(gastoAg)}${ag.filter(a=>a.status==='faltou').length?' · faltou '+ag.filter(a=>a.status==='faltou').length+'x':''}</p>
+   ${ag.slice(0,5).map(a=>`<div class="li" style="padding:6px 0"><div>${dBR(a.data)} ${esc(a.hora||'')} · ${esc(a.servico||'')}</div><div class="v">${brl(a.valor)}</div></div>`).join('')}</div>`:''}
+  ${cr.length?`<div class="grp"><div class="t">Crediário</div><p style="margin:4px 0">${c._deve>0?`Deve <b style="color:var(--out)">${brl(c._deve)}</b>`:'Nada em aberto'} · ${cr.length} compra(s)</p><a href="#fiado" class="lnk" data-clfiado="1">Ver no crediário</a></div>`:''}
+  ${os.length?`<div class="grp"><div class="t">Ordens de serviço</div>${os.slice(0,5).map(o=>`<div class="li" style="padding:6px 0"><div>#${o.num} · ${dBR(o.data)} · ${esc(o.veiculo||'')} <span class="pill ${OS_ST[o.status][1]}">${OS_ST[o.status][0]}</span></div><div class="v">${brl(totOS(o))}</div></div>`).join('')}</div>`:''}
+  ${!ag.length&&!cr.length&&!os.length?'<p class="mut" style="margin-top:14px">Ainda sem atendimentos registrados.</p>':''}`;
+ $('#sheet').classList.add('on')}
+function abrirEditCli(k){const c=k?todosClientes().find(x=>x._k===k):{nome:'',fone:'',obs:''};CL.sh={k,edit:1};const of=S.emp.ramo==='oficina';
+ $('#sbox').innerHTML=`<div class="hd"><h2>${k?'Editar cliente':'Novo cliente'}</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div class="stack">
+  <label>Nome<input id="clnome" maxlength="60" value="${esc(c.nome)}" placeholder="Nome do cliente"></label>
+  <label>WhatsApp<input id="clfone" type="tel" inputmode="tel" value="${esc(c.fone?fmtFone(c.fone):'')}" placeholder="(67) 99999-9999"></label>
+  ${of?`<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:10px"><label>Veículo<input id="clveic" value="${esc(((c.veiculos||[])[0]||{}).veiculo||'')}" placeholder="Ex.: Gol 2012"></label><label>Placa<input id="clplaca" value="${esc(((c.veiculos||[])[0]||{}).placa||'')}" style="text-transform:uppercase"></label></div>`:''}
+  <label>Observação (opcional)<input id="clobs" maxlength="120" value="${esc(c.obs||'')}" placeholder="${of?'Ex.: prefere peça original':'Ex.: alergia a esmalte X, prefere sábado'}"></label>
+  <div id="clerr"></div><button class="pri w" id="clsalva" style="min-height:54px">Salvar</button>
+  ${k?'<button class="w" id="cldel" style="color:var(--out)">Tirar da lista</button>':''}</div>`;
+ $('#sheet').classList.add('on');if(!k)$('#clnome').focus()}
+async function salvarCli(){const k=CL.sh.k,nome=$('#clnome').value.trim().replace(/\s+/g,' '),fone=soDig($('#clfone').value).slice(0,13),obs=$('#clobs').value.trim().slice(0,120);
+ const err=m=>{$('#clerr').innerHTML=`<div class="err">${m}</div>`};if(!nome)return err('Escreva o nome.');if(fone&&fone.length<10)return err('WhatsApp incompleto: coloque o DDD e o número.');
+ const nk=chaveNome(nome);const outro=todosClientes().find(x=>x._k===nk&&x._k!==k);if(outro)return err('Já existe um cliente com esse nome. Abra ele na lista ou use um sobrenome.');
+ const atual=k?todosClientes().find(x=>x._k===k):null;let L=cadCli().filter(x=>chaveNome(x.nome)!==k);
+ const n={nome,fone,...(obs?{obs}:{})};
+ if(atual){const ant=[...new Set([...(atual.ant||[]),...(nk!==k?[atual.nome]:[])])];if(ant.length)n.ant=ant.slice(-5)}
+ if($('#clplaca')){const pl=$('#clplaca').value.trim().toUpperCase().slice(0,10),ve=$('#clveic').value.trim().slice(0,40);const vs=(atual&&atual.veiculos||[]).slice(1);if(pl||ve)n.veiculos=[{veiculo:ve,placa:pl},...vs].slice(0,5);else if(vs.length)n.veiculos=vs}
+ L.push(n);try{await salvarCadCli(L);fecharSheet();render();toast(k?'Cliente atualizado':'Cliente cadastrado')}catch(e){err(esc(errMsg(e)))}}
+async function importarContatos(){try{const cs=await navigator.contacts.select(['name','tel'],{multiple:true});if(!cs||!cs.length)return;
+ const T=new Set(todosClientes().map(c=>c._k));let L=cadCli().slice(),n=0;
+ for(const c of cs){const nome=String((c.name||[])[0]||'').trim().slice(0,60);if(!nome)continue;const k=chaveNome(nome);if(T.has(k))continue;
+  const tel=(c.tel||[]).map(soDig).find(t=>t.length>=10)||'';L.push({nome,fone:tel.slice(-13)});T.add(k);n++}
+ if(!n){toast('Esses contatos já estão na lista');return}await salvarCadCli(L);render();toast(n+' cliente(s) adicionados')}catch(e){if(e&&e.name!=='AbortError')toast('Não deu para abrir os contatos do celular')}}
+document.addEventListener('click',async e=>{const t=e.target.closest('button,a');if(!t)return;const ds=t.dataset;
+ if(t.id==='clnovo'){abrirEditCli(null);return}
+ if(t.id==='climport'){importarContatos();return}
+ if(ds.clver){abrirCliente(ds.clver);return}
+ if(t.id==='cledit'){abrirEditCli(CL.sh.k);return}
+ if(t.id==='clsalva'){salvarCli();return}
+ if(ds.clfiado){fecharSheet();return}
+ if(t.id==='cldel'){const k=CL.sh.k,c=todosClientes().find(x=>x._k===k),tem=doCliente(c,AG.lista).length||doCliente(c,CR.lista).length||doCliente(c,OS.lista).length;
+  confirmar('Tirar '+c.nome+' da lista?'+(tem?' Os atendimentos e o crediário continuam guardados.':''),async()=>{let L=cadCli().filter(x=>chaveNome(x.nome)!==k);if(tem)L.push({nome:c.nome,fone:c.fone||'',oculto:true,ocultoEm:hoje()});try{await salvarCadCli(L);render();toast('Cliente tirado da lista')}catch(err){toast(errMsg(err))}},'Tirar');return}});
+document.addEventListener('input',e=>{if(e.target.id==='clbusca'){CL.busca=e.target.value;const p=e.target.selectionStart;render();const i=$('#clbusca');if(i){i.focus();i.setSelectionRange(p,p)}}});
+
 function go(t){if(location.hash==='#'+t)render();else location.hash=t}
 function render(){
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
  if(!S.emp)return telaOnboarding();
  const h=location.hash.slice(1);S.tab=abas().map(x=>x[0]).includes(h)?h:'inicio';
- $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
+ $('#app').innerHTML=({inicio:vInicio,agenda:vAgenda,os:vOS,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
  const dc=$('#daschk');if(dc)dc.onchange=async()=>{S.emp.dasLembrete=dc.checked;await API.saveEmp(S.user.uid,{dasLembrete:dc.checked});toast('Preferência salva')};
 }
 async function mudaMes(d){S.mes+=d;if(S.mes<1){S.mes=12;S.ano--}if(S.mes>12){S.mes=1;S.ano++}
