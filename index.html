@@ -3,10 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#0D1B3E">
 <title>JM Gestão+</title>
+<meta name="theme-color" content="#0D1B3E">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="JM Gestão+">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -2220,9 +2225,30 @@ async function iniciar(u){
  if(DEMO){const b=document.createElement('div');b.className='demo';b.textContent='Demonstração';document.body.appendChild(b)}
  try{await API.init()}catch(err){$('#app').innerHTML=`<div class="center"><div class="auth card"><div class="err">${esc(errMsg(err))}</div></div></div>`;return}
  API.onUser(iniciar);
- if(!DEMO&&'serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js')}catch(e){}}
 })();
 }
+</script>
+<script>
+/* ===== app instalável: registra o service worker e oferece "Instalar" uma vez por aparelho ===== */
+(function(){
+  if('serviceWorker' in navigator)window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})});
+  const instalado=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+  const dispensou=()=>{try{return localStorage.getItem('pwa-dispensa')==='1'}catch(e){return false}};
+  const dispensar=()=>{try{localStorage.setItem('pwa-dispensa','1')}catch(e){}};
+  function faixa(texto,botoes){if(document.getElementById('pwabar'))return;const b=document.createElement('div');b.id='pwabar';b.setAttribute('role','dialog');b.setAttribute('aria-label','Instalar o app');
+    b.style.cssText='position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));max-width:460px;margin:0 auto;z-index:9998;background:#0D1B3E;color:#fff;border-radius:14px;padding:12px 14px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;box-shadow:0 10px 30px rgba(0,0,0,.3);font:14px/1.4 system-ui,sans-serif';
+    const s=document.createElement('span');s.style.cssText='flex:1;min-width:180px';s.textContent=texto;b.appendChild(s);
+    for(const [t,fn,prim] of botoes){const x=document.createElement('button');x.type='button';x.textContent=t;x.style.cssText='border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;min-height:40px;'+(prim?'background:#B8962E;color:#0D1B3E':'background:transparent;color:#cbd5e1;border:1px solid #475569');x.onclick=()=>{b.remove();fn&&fn()};b.appendChild(x)}
+    document.body.appendChild(b)}
+  let ev=null;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();ev=e;if(instalado()||dispensou())return;
+    setTimeout(()=>faixa('Instale o app: ícone na tela inicial e abre em tela cheia.',[['Instalar',async()=>{ev.prompt();try{await ev.userChoice}catch(e){}ev=null}, true],['Agora não',dispensar]]),4000)});
+  window.addEventListener('appinstalled',()=>{dispensar();const b=document.getElementById('pwabar');if(b)b.remove()});
+  // iPhone/iPad no Safari não tem botão automático: mostra como fazer, uma vez
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!/crios|fxios|edgios/i.test(navigator.userAgent);
+  if(ios&&!instalado()&&!dispensou())window.addEventListener('load',()=>setTimeout(()=>faixa('Para instalar: toque em Compartilhar e depois em "Adicionar à Tela de Início".',[['Entendi',dispensar,true]]),5000));
+  window.JM_INSTALAR=()=>{if(ev){ev.prompt();ev=null;return true}return false};
+})();
 </script>
 </body>
 </html>
