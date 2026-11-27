@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com https://firebaseinstallations.googleapis.com https://brasilapi.com.br https://publica.cnpj.ws https://viacep.com.br https://servicodados.ibge.gov.br http://127.0.0.1:* http://localhost:*; frame-src https://jm-gestao-mais.firebaseapp.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>JM Gestão+</title>
@@ -354,6 +357,7 @@ const API={
  async signup(email,senha){
   email=email.trim().toLowerCase();
   if(DEMO)return API.login(email,senha);
+  if(String(senha||'').length<10)throw new Error('A senha precisa ter pelo menos 10 caracteres.');
   const r=await auth.createUserWithEmailAndPassword(email,senha);
   if(!isAdminEmail(email)){
    let ok=false;try{ok=(await db.collection('convites').doc(email).get()).exists}catch(e){ok=false}
@@ -470,14 +474,14 @@ function telaLogin(modo='entrar',msg=''){
   ${modo==='criar'?'<p class="mut" style="margin:0 0 12px">Use o mesmo e-mail que você passou para o escritório.</p>':''}
   <form class="stack" id="fa">
    <label>Seu e-mail<input type="email" name="email" autocomplete="email" required value="${esc(S._em||'')}"></label>
-   ${modo!=='esqueci'?`<label>Senha${modo==='criar'?' (mínimo 6 caracteres)':''}<input type="password" name="senha" autocomplete="${modo==='criar'?'new-password':'current-password'}" minlength="6" required></label>`:''}
+   ${modo!=='esqueci'?`<label>Senha${modo==='criar'?' (mínimo 10 caracteres)':''}<input type="password" name="senha" autocomplete="${modo==='criar'?'new-password':'current-password'}" minlength="${modo==='criar'?10:6}" required></label>`:''}
    ${msg}
    <button class="pri w" type="submit">${t[1]}</button>
   </form>
   ${DEMO?`<div class="card" style="margin-top:12px"><b>Ver a demonstração</b><p class="mut" style="margin:4px 0 10px">Dados de exemplo, só neste aparelho.</p><div class="stack"><button data-demoent="demo-conceito">Loja completa: caixa, produtos e estoque</button><button data-demoent="demo-loja">Loja de roupas (crediário)</button><button data-demoent="demo-mei">Salão / estética</button><button data-demoent="demo-barba">Barbearia</button><button data-demoent="demo-oficina">Oficina</button><button data-demoent="demo-pintor">Pintor (orçamentos)</button><button data-demoent="demo-jardim">Jardinagem (clientes fixos)</button></div></div>`:''}
   <div style="display:flex;justify-content:space-between;flex-wrap:wrap;margin-top:10px">
    ${modo!=='entrar'?'<button class="lnk" data-modo="entrar">Já tenho acesso</button>':'<button class="lnk" data-modo="criar">Primeiro acesso</button>'}
-   ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}
+   ${modo!=='esqueci'?'<button class="lnk" data-modo="esqueci">Esqueci a senha</button>':''}<button class="lnk" type="button" data-priv="1">Aviso de privacidade</button>
   </div></div>
   ${DEMO?`<div class="card mut" style="font-size:14px"><b style="color:var(--ink)">Modo demonstração.</b> Entre com <b>bella@exemplo.com</b> (cliente MEI com dados), <b>novocliente@exemplo.com</b> (primeiro acesso) ou <b>${esc(ADMIN_EMAILS[0])}</b> (escritório). Qualquer senha com 6 letras.</div>`:''}
  </div></div>`;
@@ -539,6 +543,31 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button');i
  if(t.id==='cdsalva'){const o=S.cd,m=validaCNPJ(o);if(m){$('#cderr').innerHTML=`<div class="err">${m}</div>`;return}
   const up=camposCNPJ(o);try{await API.saveEmp(S.user.uid,up);Object.assign(S.emp,up);fecharSheet();render();toast('Dados da empresa salvos')}catch(err){$('#cderr').innerHTML=`<div class="err">${esc(errMsg(err))}</div>`}}});
 
+/* ===================== SEGURANÇA E PRIVACIDADE ===================== */
+const ESC_ZAP='5567992604984',PRIV_V='2026-11';
+const agChave=()=>{try{return localStorage.getItem('jmg_agchave')||''}catch(e){return ''}};
+document.addEventListener('change',e=>{if(e.target.id==='nfchave'){try{localStorage.setItem('jmg_agchave',e.target.value.trim().toUpperCase())}catch(x){}toast('Chave salva neste computador')}});
+function emailOk(){if(DEMO)return true;const u=window.firebase&&firebase.auth().currentUser;return !u||u.emailVerified}
+function telaVerifique(msg=''){const em=esc(S.user.email);
+ $('#app').innerHTML=`<div class="center"><div class="auth"><div class="logo">JM Gestão<b>+</b></div><div class="card stack"><h2>Confirme o seu e-mail</h2>
+ <p class="mut" style="margin:0">Enviamos um link para <b>${em}</b>. Abra o e-mail (veja também o spam), toque no link e volte aqui.</p>
+ <p class="mut" style="margin:0;font-size:14px">Assim garantimos que só você usa o acesso liberado para a sua empresa.</p>${msg}
+ <button class="pri w" id="vfok">Já confirmei</button><button class="w" id="vfenv">Enviar o link de novo</button><button class="lnk" id="vfsair">Sair</button></div></div></div>`;
+ $('#vfok').onclick=async()=>{const u=firebase.auth().currentUser;try{await u.reload();await u.getIdToken(true)}catch(e){}if(firebase.auth().currentUser.emailVerified)render();else telaVerifique('<div class="err">Ainda não aparece confirmado. Toque no link do e-mail e tente de novo.</div>')};
+ $('#vfenv').onclick=async()=>{try{await firebase.auth().currentUser.sendEmailVerification();telaVerifique('<div class="ok">Link enviado. Confira a caixa de entrada e o spam.</div>')}catch(e){telaVerifique(`<div class="err">${esc(errMsg(e))}</div>`)}};
+ $('#vfsair').onclick=()=>API.logout().then(()=>location.reload())}
+function avisoPriv(){return `<div class="hd"><h2>Aviso de privacidade</h2><button class="x" id="shx" aria-label="Fechar">×</button></div><div style="font-size:15px;line-height:1.5">
+<p class="mut">Versão de novembro de 2026</p>
+<p><b>Quem somos.</b> O JM Gestão+ é oferecido pela JM Gestão Contábil e Perícias Ltda (CNPJ 64.211.255/0001-86), Ivinhema/MS. Contato do encarregado de dados: contato@jmgestaocontabil.com.br.</p>
+<p><b>Papéis.</b> A empresa cliente decide quais dados dos seus clientes registra no app e é a controladora desses dados. A JM Gestão trata esses dados em nome dela, como operadora, para prestar o serviço contratado.</p>
+<p><b>Dados tratados.</b> Do usuário: e-mail e dados da empresa (CNPJ, razão social, endereço). Dos clientes da empresa, quando informados: nome, WhatsApp, CPF ou CNPJ, endereço (notas fiscais), compras, parcelas, horários e serviços.</p>
+<p><b>Para quê.</b> Controle financeiro, vendas, agenda, orçamentos, cobranças, emissão de notas fiscais e acompanhamento contábil e fiscal pelo escritório. Bases legais: execução do contrato e cumprimento de obrigação legal e fiscal (LGPD, art. 7º, II e V).</p>
+<p><b>Com quem compartilhamos.</b> Google Cloud/Firebase, onde os dados ficam guardados (servidores em São Paulo); a SEFAZ, quando uma nota fiscal é emitida; consultas públicas de CNPJ e CEP; e o WhatsApp, só quando o usuário toca para enviar uma mensagem. Não vendemos dados.</p>
+<p><b>Por quanto tempo.</b> Enquanto o contrato estiver ativo. Documentos fiscais e registros de vendas ficam guardados pelo prazo legal, de no mínimo 5 anos. Depois disso, os dados são excluídos ou anonimizados.</p>
+<p><b>Segurança.</b> Acesso com e-mail confirmado e senha; cada empresa só acessa os próprios dados; o escritório acessa para prestar o serviço contábil; conexão criptografada (HTTPS); cópias de segurança criptografadas guardadas pelo escritório.</p>
+<p><b>Seus direitos.</b> Confirmar o tratamento, acessar, corrigir, pedir a portabilidade ou a exclusão de dados (respeitados os prazos legais de guarda) e tirar dúvidas pelo e-mail acima. Pedidos dos clientes finais devem ser feitos à empresa onde compraram, e nós ajudamos a atender.</p></div>`}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-priv]');if(!t)return;e.preventDefault();e.stopPropagation();sheetOS(avisoPriv())},true);
+
 /* ===================== PRIMEIRO ACESSO ===================== */
 function telaOnboarding(){
  const o=S.ob;if(o.mei===undefined&&o.cnpjDados&&typeof o.cnpjDados.mei==='boolean')o.mei=o.cnpjDados.mei;
@@ -557,7 +586,7 @@ function telaOnboarding(){
   <div class="yn"><button data-das="1" class="${o.das!==false?'on':''}">Sim, quero</button><button data-das="0" class="${o.das===false?'on':''}">Não precisa</button></div>`;
  $('#app').innerHTML=`<div class="center"><div class="auth"><div class="logo" style="font-size:22px">JM Gestão<b>+</b></div>
   <div class="card"><div class="steps">${P.map((_,i)=>`<i class="${i<st?'on':''}"></i>`).join('')}</div>
-  <div class="stack">${body}<div id="oberr"></div>
+  <div class="stack">${body}${st===N?`<label style="flex-direction:row;display:flex;gap:10px;align-items:flex-start;font-size:15px"><input type="checkbox" id="obpriv" style="width:22px;min-height:22px;margin-top:2px" ${o.priv?'checked':''}> <span>Li e aceito o <button class="lnk" type="button" data-priv="1" style="padding:0;min-height:0">aviso de privacidade</button>.</span></label>`:''}<div id="oberr"></div>
   <div style="display:grid;grid-template-columns:${st>1?'1fr 2fr':'1fr'};gap:10px">${st>1?'<button id="obv">Voltar</button>':''}<button class="pri" id="obg">${st<N?'Continuar':'Começar a usar'}</button></div></div></div>
   <p class="mut" style="text-align:center">Passo ${st} de ${N}</p></div></div>`;
  if(ps==='cnpj')ligaCNPJ(o,telaOnboarding);const f=ps==='cnpj'?(soDig(o.cnpj).length===14?$('#apres'):$('#cnpjin')):$('#oba');if(f){f.focus();if(f.id==='cnpjin')f.setSelectionRange(f.value.length,f.value.length)}
@@ -570,8 +599,9 @@ async function obNext(){
  if(ps==='nicho'){if(!o.ramo)return e('Escolha o seu ramo.');if(o.ramo==='outro'&&!o.tipo)return e('Diga se presta serviço, vende produtos ou os dois.')}
  if(ps==='abertura'){o.abertura=$('#oba').value;if(!o.abertura)return e('Informe o mês e o ano. Se não lembrar, use um valor aproximado.')}
  if(o.step<obPassos(o).length){o.step++;return telaOnboarding()}
+ o.priv=!!($('#obpriv')&&$('#obpriv').checked);if(!o.priv)return e('Para começar, aceite o aviso de privacidade.');
  const R=RAMOS[o.ramo],mei=o.mei!==false;
- const emp={...camposCNPJ(o),mei,tipo:R.tipo||o.tipo||'servico',ramo:o.ramo,mods:{...(o.mods||{})},dasLembrete:mei&&o.das!==false,email:S.user.email,dicas:{},criadoEm:hoje(),...(mei&&o.abertura?{abertura:o.abertura}:{}),...(R.serv?{servicos:servPreset(o.ramo)}:{})};
+ const emp={...camposCNPJ(o),mei,tipo:R.tipo||o.tipo||'servico',ramo:o.ramo,mods:{...(o.mods||{})},dasLembrete:mei&&o.das!==false,email:S.user.email,dicas:{},criadoEm:hoje(),aceitePriv:{v:PRIV_V,em:hoje()},...(mei&&o.abertura?{abertura:o.abertura}:{}),...(R.serv?{servicos:servPreset(o.ramo)}:{})};
  try{await API.saveEmp(S.user.uid,emp);S.emp={uid:S.user.uid,...emp};S.lanc=[];go('inicio');toast('Pronto! Seu app está configurado.')}
  catch(err){e(esc(errMsg(err)))}
 }
@@ -667,7 +697,7 @@ function vAjuda(){ setTimeout(()=>{const m=$('main');if(m&&!$('#mudaramo')){m.in
  ${WHATSAPP?`<a class="card" style="display:block;text-decoration:none;color:inherit" href="https://wa.me/55${esc(WHATSAPP)}"><h3>Falar com o escritório no WhatsApp</h3><p class="mut" style="margin:4px 0 0">(${esc(WHATSAPP.slice(0,2))}) ${esc(WHATSAPP.slice(2))}</p></a>`:''}
  <div class="card"><h3>Meus dados</h3><p class="mut" style="margin:6px 0 0">${S.emp.cnpj?'CNPJ '+esc(fmtCNPJ(S.emp.cnpj))+(S.emp.razao?' · '+esc(S.emp.razao):'')+'<br>':'<b style="color:var(--out)">CNPJ não informado</b><br>'}${esc(S.emp.nome)} · ${({servico:'Presta serviço',comercio:'Vende produtos',ambos:'Vende e presta serviço'})[S.emp.tipo]} · MEI desde ${esc((S.emp.abertura||'').split('-').reverse().join('/'))}</p>
   <label style="margin-top:12px;flex-direction:row;display:flex;align-items:center;gap:10px;color:var(--ink)"><input type="checkbox" id="daschk" style="width:24px;min-height:24px" ${S.emp.dasLembrete?'checked':''}> Mostrar lembrete do DAS</label>
-  <button id="abredados" style="margin-top:10px">${S.emp.cnpj?'Editar dados da empresa':'Informar CNPJ'}</button><br><button class="lnk" id="lojaon" style="margin-top:6px">${S.emp.lojaPDV?'Desligar a Loja completa (caixa e estoque)':'Ligar a Loja completa: caixa, produtos e estoque'}</button><br><button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
+  <button id="abredados" style="margin-top:10px">${S.emp.cnpj?'Editar dados da empresa':'Informar CNPJ'}</button><br><button class="lnk" id="lojaon" style="margin-top:6px">${S.emp.lojaPDV?'Desligar a Loja completa: falar com o escritório':'Quero a Loja completa (caixa, produtos e estoque): falar com o escritório'}</button><br><button class="lnk" data-priv="1" style="margin-top:6px">Aviso de privacidade</button><br><button class="lnk" id="revdicas" style="margin-top:6px">Mostrar as dicas de novo</button></div>
  <p class="mut" style="text-align:center">JM Gestão+ · versão piloto · JM Gestão Contábil e Perícias</p>`)}
 
 /* ===================== LANÇAMENTO ===================== */
@@ -1478,7 +1508,7 @@ document.addEventListener('click',async e=>{const t=e.target.closest('button,a')
  if(ds.petqp){const p=LJ.prods.find(x=>x.id===ds.petqp);if(p)etiquetas(etqDoProduto(p));return}
  if(t.id==='petq'){abrirEtiquetas();return}
  if(t.id==='etqgo'){const ids=[...document.querySelectorAll('[data-etqsel]:checked')].map(i=>i.dataset.etqsel);etiquetas(LJ.prods.filter(p=>ids.includes(p.id)).flatMap(etqDoProduto));return}
- if(t.id==='lojaon'){const on=!S.emp.lojaPDV;await API.saveEmp(S.user.uid,{lojaPDV:on});S.emp.lojaPDV=on;if(on)await carregarLoja();go(on?'produtos':'inicio');toast(on?'Loja completa ligada: cadastre os produtos':'Loja completa desligada');return}
+ if(t.id==='lojaon'){window.open('https://wa.me/'+ESC_ZAP+'?text='+encodeURIComponent('Olá! Quero '+(S.emp.lojaPDV?'desligar':'ligar')+' a Loja completa (caixa e estoque) no JM Gestão+ da '+S.emp.nome+'.'),'_blank','noopener');return}
 });
 document.addEventListener('input',e=>{const id=e.target.id;
  if(id==='pdvq'){LJ.q=e.target.value;const p=e.target.selectionStart;render();const i=$('#pdvq');if(i){i.focus();i.setSelectionRange(p,p)}}
@@ -1501,8 +1531,8 @@ const nfOn=()=>!!(S.emp&&S.emp.nfceOn&&fiscalOk());
 const FISC=['nfe:nova','nfe','nfce'];const telasOk=()=>TELAS.filter(t=>fiscalOk()||!FISC.includes(t[0]));
 const nfUrl=()=>String(S.emp.nfceUrl||'http://127.0.0.1:8765').replace(/\/+$/,'');
 async function agente(path,body,ms=15000){const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
- try{const r=await fetch(nfUrl()+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined,signal:c.signal});
-  if(!r.ok)throw new Error('O programa da nota recusou o pedido ('+r.status+').');return await r.json()}
+ try{const h={'X-JM-Chave':agChave()};if(body)h['Content-Type']='application/json';const r=await fetch(nfUrl()+path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined,signal:c.signal});
+  if(r.status===401)throw new Error('Chave do programa da nota errada ou não informada. Confira em Nota fiscal (NFC-e).');if(!r.ok)throw new Error('O programa da nota recusou o pedido ('+r.status+').');return await r.json()}
  catch(x){if(x.name==='AbortError')throw new Error('O programa da nota demorou demais para responder.');if(x instanceof TypeError)throw new Error('Não encontrei o programa da nota. Use o computador do balcão e confira se a janela "Nota fiscal" está aberta.');throw x}
  finally{clearTimeout(t)}}
 function cpfOk(c){c=soDig(c);if(c.length!==11||/^(\d)\1+$/.test(c))return false;for(const n of [9,10]){let s=0;for(let i=0;i<n;i++)s+=+c[i]*(n+1-i);if((s*10%11)%10!==+c[n])return false}return true}
@@ -1580,7 +1610,7 @@ function vNFCe(){const e=S.emp,P=nfPendentes(),t=NFX.teste,mes=hoje().slice(0,7)
   <p class="mut" style="margin:8px 0 0">A nota é assinada pelo programa da nota, instalado no computador do balcão com o certificado digital da empresa. Vendas feitas no celular ficam pendentes e você emite por aqui, no computador do balcão.</p>
   ${e.nfceOn?`<div class="stack" style="margin-top:12px"><label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="nfauto" ${e.nfceAuto!==false?'checked':''} style="width:20px;height:20px"> Emitir sozinho ao concluir a venda</label>
   <label style="display:flex;gap:10px;align-items:center"><input type="checkbox" id="nfimp" ${e.nfceImp!==false?'checked':''} style="width:20px;height:20px"> Imprimir a nota logo que for autorizada</label>
-  <details><summary class="mut" style="cursor:pointer">Avançado</summary><label style="margin-top:8px">Endereço do programa da nota<input id="nfurl" value="${esc(nfUrl())}"></label></details></div>`:''}</div>
+  <label style="margin-top:4px">Chave do programa da nota (aparece no computador do balcão ao instalar)<input id="nfchave" autocomplete="off" value="${esc(agChave())}" placeholder="Ex.: 4F7K-9QX2-…"></label><details><summary class="mut" style="cursor:pointer">Avançado</summary><label style="margin-top:8px">Endereço do programa da nota<input id="nfurl" value="${esc(nfUrl())}"></label></details></div>`:''}</div>
  ${e.nfceOn?`<div class="card"><b>Conexão</b><div id="nfteste" class="mut" style="margin-top:6px">${t?t:'Toque em testar no computador do balcão.'}</div><button id="nftestar" style="margin-top:10px">Testar programa e SEFAZ</button></div>
  <div class="card"><b>Pendentes (${P.length})</b>${P.length?`<div style="margin-top:8px">${P.map(v=>`<div class="li"><div><b>Venda nº ${v.num}</b> · ${dBR(v.data)} ${esc(v.hora||'')} · ${brl(v.total)}<div class="d">${esc(((v.nfce||{}).msg||'Ainda não emitida').slice(0,120))}</div></div><button data-nfemit="${esc(v.id)}" ${NFX.busy[v.id]?'disabled':''}>${NFX.busy[v.id]?'Emitindo…':'Emitir'}</button></div>`).join('')}</div>${P.length>1?'<button class="pri w" id="nftodas" style="margin-top:10px">Emitir todas</button>':''}`:'<div class="mut" style="margin-top:6px">Nenhuma venda sem nota. 👍</div>'}</div>
  <div class="card"><b>XML para a contabilidade</b><div class="mut" style="margin-top:6px">${aut} NFC-e emitida(s) em ${mes.slice(5)}/${mes.slice(0,4)}. O escritório também baixa as notas pelo painel dele.</div><label style="margin-top:10px">Mês<input type="month" id="nfmes" value="${mes}"></label><button id="nfxml" style="margin-top:10px">Baixar XMLs do mês (NFC-e e NF-e, .zip)</button></div>`:''}`)}
@@ -2160,7 +2190,7 @@ function render(){
  if(S.modo)faixaModo();else document.getElementById('modofx')?.remove();
  if(!S.user)return telaLogin();
  if(S.isAdmin){$('#app').innerHTML=vAdmin();bindAdmin();return}
- if(!S.emp)return telaOnboarding();
+ if(!S.emp)return emailOk()?telaOnboarding():telaVerifique();
  if(S.emp.bloqueado)return telaBloqueado();
  const h=location.hash.slice(1);S.tab=[...abas().map(x=>x[0]),...(usaLoja()?['vendas','extrato','relatorio','ajuda',...(fiscalOk()?['nfce','nfe']:[])]:[])].includes(h)?h:'inicio';
  $('#app').innerHTML=({vender:vVender,produtos:vProdutos,vendas:vVendas,mais:vMais,nfce:vNFCe,nfe:vNFe,inicio:vInicio,agenda:vAgenda,os:vOS,fixos:vFixos,fiado:vFiado,clientes:vClientes,extrato:vExtrato,relatorio:vRelatorio,ajuda:vAjuda})[S.tab]();
