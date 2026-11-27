@@ -622,7 +622,7 @@ const IC={
  ajuda:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17h.01"/></svg>'};
 function abas(){if(usaLoja())return [['inicio','Início'],['vender','Vender'],['produtos','Produtos'],['fiado','Crediário'],['clientes','Clientes'],['mais','Mais']];return [['inicio','Início'],...(usaAgenda()?[['agenda','Agenda']]:[]),...(usaOS()?[['os',modoOS()==='obra'?'Serviços':'OS']]:[]),...(usaRecor()?[['fixos','Fixos']]:[]),...(usaCred()?[['fiado','Crediário']]:[]),['clientes','Clientes'],['extrato','Extrato'],['relatorio','Relatório'],...((usaAgenda()?1:0)+(usaOS()?1:0)+(usaCred()?1:0)+(usaRecor()?1:0)>=2?[]:[['ajuda','Ajuda']])]}
 function shell(inner,cls){
- if(usaLoja())return `${topoLoja()}<main class="wrap${cls==='wide'?' lw':''}">${inner}</main>
+ if(usaPainel())return `${topoLoja()}<main class="wrap${cls==='wide'?' lw':''}">${inner}</main>
  <nav class="tabs lj-tabs" aria-label="Menu" style="--nt:${abas().length}">${abas().map(t=>`<a href="#${t[0]}" class="${S.tab===t[0]?'on':''}">${IC[t[0]]}${t[1]}</a>`).join('')}</nav>${PN.busca?caixaBusca():''}`;
  return `<header class="top"><div class="in"><div><div class="brand">JM Gestão<b>+</b></div><small>${esc(S.emp.nome)}</small></div><div style="display:flex;gap:8px">${abas().some(t=>t[0]==='ajuda')?'':'<a href="#ajuda" class="hbtn" aria-label="Ajuda">?</a>'}<button id="sair">Sair</button></div></div></header>
  <main class="wrap">${inner}</main>
@@ -630,6 +630,7 @@ function shell(inner,cls){
 
 function vInicio(){
  if(usaLoja())return vInicioLoja();
+ if(usaServ())return vInicioServ();
  const a=S.ano,m=S.mes,LM=doMes(S.lanc,new Date().getFullYear(),new Date().getMonth()+1);
  const ent=soma(LM,'in'),sai=soma(LM,'out');
  const fatAno=S.lanc.filter(isFat).reduce((s,l)=>s+l.valor,0);
@@ -1922,6 +1923,10 @@ function abrirTela(k){PN.menu=false;PN.acoes=false;PN.busca=null;fecharSheet();
  if(k==='nfe:nova'){go('nfe');return novaNota()}
  if(k==='zap')return abrirZap();if(k==='novoprod'){go('produtos');return setTimeout(()=>abrirProduto(null),60)}
  if(k==='novocli'){go('clientes');return setTimeout(()=>abrirEditCli(null),60)}
+ if(k==='agenda:novo'){go('agenda');return setTimeout(()=>$('[data-agnovo]')?.click(),60)}
+ if(k==='os:novo'){go('os');return setTimeout(()=>$('[data-osnovo]')?.click(),60)}
+ if(k==='fixos:novo'){go('fixos');return setTimeout(()=>$('[data-rcnovo]')?.click(),60)}
+ if(k==='servicos')return abrirServicos();
  if(k==='buscaprod')return abrirBusca('produtos ');if(k==='buscacli')return abrirBusca('clientes ');
  go(k)}
 
@@ -1962,35 +1967,93 @@ function vInicioLoja(){const h=hoje(),V=vendasDia(h),t=V.reduce((s,v)=>s+v.total
   ${V.length?`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><h3>Últimas vendas</h3><a href="#vendas" class="lnk" style="font-size:14px">Ver todas</a></div>${[...V].reverse().slice(0,4).map(itemVenda).join('')}</div>`:''}
  </aside></div>`,'wide')}
 
+
+/* ===================== PAINEL DO PRESTADOR DE SERVIÇOS ===================== */
+/* Mesmo jeito do painel da loja (barra, menu, busca, atalhos F2…), mas sem caixa nem estoque. */
+const usaServ=()=>!!(S.emp&&!usaLoja()&&S.emp.tipo!=='comercio');
+const usaPainel=()=>usaLoja()||usaServ();
+function telasServ(){const V=vocOS(),L=[];
+ if(usaAgenda())L.push(['agenda:novo','Novo horário','Marcar um cliente na agenda','agenda','pessoas','F2']);
+ if(usaOS())L.push(['os:novo',V.obra?'Novo orçamento':'Nova ordem de serviço',V.obra?'Por m², diária ou empreitada, com sinal':'Entrada do serviço e orçamento','os','venda',usaAgenda()?'F3':'F2']);
+ L.push(['recebi','Recebi um pagamento','Serviço pago, sinal ou mensalidade','recebi','entrada','F4']);
+ L.push(['clientes','Clientes','Ficha, histórico e WhatsApp','clientes','pessoas','F5']);
+ L.push(['despesa','Nova despesa','Material, combustível, aluguel…','despesa','saida','F6']);
+ if(usaRecor())L.push(['fixos','Clientes fixos','Mensalidades do mês','fixos','entrada','F7']);
+ if(usaCred())L.push(['fiado','Contas a receber','Parcelas e quem está devendo','fiado','entrada','F8']);
+ L.push(['extrato','Fluxo de caixa','Tudo que entrou e saiu no mês','caixa','entrada','F9']);
+ if(usaAgenda())L.push(['agenda','Agenda','Horários do dia e da semana','agenda','pessoas','']);
+ if(usaOS())L.push(['os',V.tit,'Em aberto, aprovados e recebidos','os','venda','']);
+ L.push(['relatorio','Relatório do mês','Resumo para você e para o escritório','relatorio','fiscal','']);
+ L.push(['servicos','Serviços e preços','Lista de serviços com valor','relatorio','pessoas','']);
+ L.push(['ajuda','Ajuda e meus dados','Dados da empresa, dicas e configurações','ajuda','pessoas',''])
+ return L}
+const telasAtivas=()=>usaLoja()?telasOk():telasServ();
+function metricaServ(k){try{const h=hoje(),mes=h.slice(0,7),LM=doMes(S.lanc,+h.slice(0,4),+h.slice(5,7));
+ if(k==='agenda:novo'||k==='agenda'){const D=doDia(h).filter(a=>a.status!=='faltou'),prox=D.filter(a=>a.status==='marcado'&&a.hora>=new Date().toTimeString().slice(0,5));return D.length?`Hoje: <b>${D.length} horário${D.length>1?'s':''}</b>${prox.length?' · próximo às '+esc(prox[0].hora):''}`:'Nenhum horário hoje'}
+ if(k==='os:novo'||k==='os'){const ab=OS.lista.filter(o=>o.status!=='entregue');return ab.length?`<b>${ab.length}</b> em aberto · ${brl(ab.reduce((s,o)=>s+totOS(o),0))}`:'Nada em aberto'}
+ if(k==='recebi'){const s=soma(LM,'in');return s?`Entrou no mês: <b>${brl(s)}</b>`:''}
+ if(k==='fixos'){const R=resumoRec(mes);return R.L.length?(R.ab?`<b>${brl(R.ab)}</b> a receber${R.atr?` · <b class="neg">${R.atr} atrasado${R.atr>1?'s':''}</b>`:''}`:'Todos pagaram'):''}
+ return metricaTela(k)}catch(e){}return ''}
+function avisosServ(){const A=[];try{const h=hoje();
+ if(usaAgenda()){const am=doDia(addDia(h,1)).filter(a=>a.status==='marcado'&&a.fone&&!a.conf).length;if(am)A.push(['agenda','warn',`${am} horário${am>1?'s':''} de amanhã sem confirmação`,'Toque para mandar a confirmação pelo WhatsApp.'])}
+ if(usaOS()){const V=vocOS(),pr=OS.lista.filter(o=>o.status==='pronto');if(pr.length)A.push(['os','out',`${pr.length} ${V.obra?'serviço(s) terminado(s)':'OS pronta(s)'} sem receber`,brl(pr.reduce((s,o)=>s+faltaOS(o),0))+' para receber.'])
+  const par=OS.lista.filter(o=>o.status==='orcamento'&&o.data<=addDia(h,-3));if(par.length)A.push(['os','warn',`${par.length} orçamento${par.length>1?'s':''} sem resposta há 3 dias ou mais`,'Vale mandar uma mensagem para o cliente.'])}
+ if(usaRecor()){const R=resumoRec(h.slice(0,7));if(R.atr)A.push(['fixos','out',`${R.atr} cliente${R.atr>1?'s':''} fixo${R.atr>1?'s':''} atrasado${R.atr>1?'s':''}`,'A cobrança vai pronta pelo WhatsApp.'])}
+ if(usaCred()){const r=resumoCred();if(r.atr)A.push(['fiado','out',`${brl(r.atr)} em parcelas atrasadas`,'Cobre pelo WhatsApp direto na ficha do cliente.'])}
+ if(!S.emp.cnpj)A.push(['ajuda','warn','Cadastro da empresa incompleto','Falta o CNPJ. A gente busca o resto na Receita.'])}catch(e){}return A}
+function vInicioServ(){const h=hoje(),D=usaAgenda()?doDia(h).filter(a=>a.status!=='faltou'):[],A=avisosServ(),bloco=telasServ().slice(0,9);
+ const LH=S.lanc.filter(l=>l.data===h),entHoje=soma(LH,'in');
+ const aRec=(usaRecor()?resumoRec(h.slice(0,7)).ab:0)+(usaOS()?OS.lista.filter(o=>o.status==='pronto').reduce((s,o)=>s+faltaOS(o),0):0)+(usaCred()?resumoCred().rec:0);
+ const tile=(x,i)=>{const [k,tit,desc,ic,ar,f]=x,m=metricaServ(k);return `<button class="tile${i===0?' tl-main':''}" data-tela="${k}" style="--ar:${AREA[ar]}">
+  <span class="tl-ic">${IC[ic]}</span><span class="tl-tx"><b>${tit}</b><small>${desc}</small>${m?`<span class="tl-m">${m}</span>`:''}</span>
+  <span class="tl-art" aria-hidden="true">${IC[ic]}</span>${f?`<kbd>${f}</kbd>`:''}</button>`};
+ return shell(`<div class="painel"><section class="tiles" aria-label="Atalhos">${bloco.map(tile).join('')}</section>
+ <aside class="pside">
+  <div class="card hoje"><div class="mut">Entrou hoje</div><div class="big v">${brl(entHoje)}</div><div class="mut">${aRec?'A receber: <b>'+brl(aRec)+'</b>':'Nada pendente para receber.'}</div>
+   ${usaAgenda()?`<div class="formas" style="margin-top:10px">${D.length?D.slice(0,6).map(a=>`<div><span>${esc(a.hora)} · ${esc(String(a.cli).split(' ')[0])}${a.conf?' ✓':''}</span><b class="v">${esc(a.servico||'')}</b></div>`).join(''):'<div><span class="mut">Nenhum horário hoje</span></div>'}</div>`:''}
+   <button class="pri w" data-tela="${bloco[0][0]}" style="margin-top:12px">${bloco[0][1]} <kbd class="kd">${bloco[0][5]||''}</kbd></button></div>
+  <div class="card avisos"><h3><span class="av-ic">${IC.sino}</span>Avisos</h3>
+   ${A.length?A.map(([k,tp,tit,d])=>`<button class="aviso ${tp}" data-tela="${k}"><b>${esc(tit)}</b><small>${esc(d)}</small></button>`).join(''):'<p class="mut" style="margin:6px 0 0">Tudo em dia por aqui.</p>'}</div>
+ </aside></div>`,'wide')}
+function menuAcoesServ(){const V=vocOS(),L=[['zap','zap','Zap Fácil','Abrir conversa no WhatsApp sem salvar o contato'],
+ ...(usaAgenda()?[['agenda:novo','agenda','Novo horário','Marcar um cliente']]:[]),...(usaOS()?[['os:novo','os',V.obra?'Novo orçamento':'Nova OS','Orçamento rápido']]:[]),
+ ...(usaRecor()?[['fixos:novo','fixos','Novo cliente fixo','Mensalidade todo mês']]:[]),['novocli','clientes','Novo cliente','Cadastrar uma pessoa ou empresa'],
+ ['recebi','recebi','Recebi um pagamento','Entrada no caixa'],['despesa','despesa','Nova despesa','Lançar uma conta paga'],['buscacli','busca','Pesquisar clientes','Ficha e WhatsApp']];
+ return `<div class="qmenu" role="menu"><div class="qm-hd">${IC.raio}<b>Ações rápidas</b></div>${L.map(([k,ic,t,d])=>`<button role="menuitem" data-tela="${k}"><span class="qm-ic">${IC[ic]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('')}</div>`}
+function gruposServ(){const V=vocOS();return [['Início',[['inicio','inicio','Tela inicial'],['ajuda','ajuda','Ajuda e meus dados']]],
+ ['Atendimento',[...(usaAgenda()?[['agenda','agenda','Agenda']]:[]),...(usaOS()?[['os','os',V.tit]]:[]),...(usaRecor()?[['fixos','fixos','Clientes fixos']]:[])]],
+ ['Cadastros',[['clientes','clientes','Clientes'],['servicos','relatorio','Serviços e preços']]],
+ ['Financeiro',[['recebi','recebi','Recebi um pagamento'],['despesa','despesa','Nova despesa'],...(usaCred()?[['fiado','fiado','Contas a receber']]:[]),['extrato','caixa','Fluxo de caixa'],['relatorio','relatorio','Relatório do mês']]]].filter(g=>g[1].length)}
+
 /* barra de cima, menu lateral e ações rápidas */
 function topoLoja(){const e=S.emp;return `<header class="lt"><div class="lt-in">
  <button class="lt-b" id="pnmenu" aria-label="Abrir menu" aria-expanded="${PN.menu}">${IC.menu}</button>
  <a href="#inicio" class="lt-brand"><span>JM Gestão<b>+</b></span><small>${esc(e.nome)}</small></a>
- <button class="lt-busca" id="pnbusca" aria-label="Pesquisar (Ctrl+K)">${IC.busca}<span>Pesquisar tela, produto, cliente…</span><kbd>Ctrl K</kbd></button>
+ <button class="lt-busca" id="pnbusca" aria-label="Pesquisar (Ctrl+K)">${IC.busca}<span>${usaLoja()?'Pesquisar tela, produto, cliente…':'Pesquisar tela ou cliente…'}</span><kbd>Ctrl K</kbd></button>
  <nav class="lt-ic" aria-label="Atalhos">
   <a href="#ajuda" class="lt-b" title="Ajuda" aria-label="Ajuda">${IC.ajuda}</a>
-  <button class="lt-b" data-tela="vender" title="Vender (F2)" aria-label="Vender">${IC.vender}</button>
+  ${usaLoja()?`<button class="lt-b" data-tela="vender" title="Vender (F2)" aria-label="Vender">${IC.vender}</button>`:(t=>`<button class="lt-b" data-tela="${t[0]}" title="${t[1]} (${t[5]})" aria-label="${t[1]}">${IC[t[3]]}</button>`)(telasServ()[0])}
   <button class="lt-b lt-busca-m" id="pnbusca2" aria-label="Pesquisar">${IC.busca}</button>
-  <div class="lt-ac"><button class="lt-b raio${PN.acoes?' on':''}" id="pnacoes" aria-label="Ações rápidas" aria-expanded="${PN.acoes}">${IC.raio}</button>${PN.acoes?menuAcoes():''}</div>
+  <div class="lt-ac"><button class="lt-b raio${PN.acoes?' on':''}" id="pnacoes" aria-label="Ações rápidas" aria-expanded="${PN.acoes}">${IC.raio}</button>${PN.acoes?(usaLoja()?menuAcoes():menuAcoesServ()):''}</div>
  </nav></div></header>${PN.menu?gaveta():''}`}
 function menuAcoes(){const L=[['zap','zap','Zap Fácil','Abrir conversa no WhatsApp sem salvar o contato'],['buscaprod','busca','Pesquisar produtos','Preço, grade e estoque'],['buscacli','busca','Pesquisar clientes','Ficha, crediário e WhatsApp'],
  ['novoprod','produtos','Novo produto','Cadastrar um item para vender'],['novocli','clientes','Novo cliente','Cadastrar uma pessoa ou empresa'],['despesa','despesa','Nova despesa','Lançar uma conta paga'],['recebi','recebi','Recebi dinheiro','Entrada fora do caixa'],['nfe:nova','nfe','Nova NF-e','Venda para empresa, outro estado ou devolução']];
  return `<div class="qmenu" role="menu"><div class="qm-hd">${IC.raio}<b>Ações rápidas</b></div>${L.map(([k,ic,t,d])=>`<button role="menuitem" data-tela="${k}"><span class="qm-ic">${IC[ic]}</span><span><b>${t}</b><small>${d}</small></span></button>`).join('')}</div>`}
 function gaveta(){const e=S.emp,ini=(e.nome||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
- const g=(tit,itens,aberto=true)=>`<details ${aberto?'open':''}><summary>${tit}</summary>${itens.map(([k,ic,t])=>`<button data-tela="${k}" class="${S.tab===k?'on':''}">${IC[ic]}<span>${t}</span>${(TELAS.find(x=>x[0]===k)||[])[5]?`<kbd>${TELAS.find(x=>x[0]===k)[5]}</kbd>`:''}</button>`).join('')}</details>`;
+ const g=(tit,itens,aberto=true)=>`<details ${aberto?'open':''}><summary>${tit}</summary>${itens.map(([k,ic,t])=>`<button data-tela="${k}" class="${S.tab===k?'on':''}">${IC[ic]}<span>${t}</span>${(telasAtivas().find(x=>x[0]===k)||[])[5]?`<kbd>${telasAtivas().find(x=>x[0]===k)[5]}</kbd>`:''}</button>`).join('')}</details>`;
  return `<div class="gav-fundo" id="gavfundo"></div><aside class="gav" aria-label="Menu">
  <div class="gav-perfil"><span class="gav-av">${esc(ini)}</span><div><b>${esc(e.nome)}</b><small>${e.cnpj?'CNPJ '+esc(fmtCNPJ(e.cnpj)):'CNPJ não informado'}</small><small>${esc(S.user.email||'')}</small></div><button class="x" id="gavx" aria-label="Fechar menu">×</button></div>
- <nav class="gav-nav">${g('Início',[['inicio','inicio','Tela inicial'],['ajuda','ajuda','Ajuda e meus dados']])}
+ <nav class="gav-nav">${usaServ()?gruposServ().map(([t,it])=>g(t,it)).join(''):`${g('Início',[['inicio','inicio','Tela inicial'],['ajuda','ajuda','Ajuda e meus dados']])}
  ${g('Vendas',[['vender','vender','Vender (caixa)'],['vendas','vendas','Vendas'],['fiado','fiado','Contas a receber']])}
  ${g('Cadastros',[['produtos','produtos','Produtos e estoque'],['clientes','clientes','Clientes']])}
  ${g('Financeiro',[['despesa','despesa','Nova despesa'],['recebi','recebi','Recebi dinheiro'],['extrato','caixa','Fluxo de caixa'],['relatorio','relatorio','Relatório do mês']])}
- ${!fiscalOk()?'':g('Notas fiscais',[['nfce','nfce','Nota do caixa (NFC-e)'],['nfe','nfe','NF-e (modelo 55)'],['nfe:nova','nfe','Nova NF-e']])}</nav>
+ ${!fiscalOk()?'':g('Notas fiscais',[['nfce','nfce','Nota do caixa (NFC-e)'],['nfe','nfe','NF-e (modelo 55)'],['nfe:nova','nfe','Nova NF-e']])}`}</nav>
  <button class="gav-sair" id="sair">${IC.sair}<span>Sair</span></button></aside>`}
 
 /* busca Ctrl+K */
 function abrirBusca(q=''){PN.busca=true;PN.bq=q;PN.bi=0;PN.acoes=false;PN.menu=false;render();setTimeout(()=>{const i=$('#bkq');if(i){i.focus();i.setSelectionRange(q.length,q.length)}},0)}
 function resultadosBusca(){const raw=PN.bq.trim(),soP=/^produtos\s/i.test(PN.bq),soC=/^clientes\s/i.test(PN.bq),q=chaveNome(raw.replace(/^(produtos|clientes)\s*/i,'')),R=[];
- if(!soP&&!soC)telasOk().filter(t=>!q||chaveNome(t[1]+' '+t[2]).includes(q)).forEach(t=>R.push({tipo:'Tela',ic:t[3],t:t[1],d:t[2],k:'tela:'+t[0],f:t[5]}));
+ if(!soP&&!soC)telasAtivas().filter(t=>!q||chaveNome(t[1]+' '+t[2]).includes(q)).forEach(t=>R.push({tipo:'Tela',ic:t[3],t:t[1],d:t[2],k:'tela:'+t[0],f:t[5]}));
  if(!soC&&(q||soP))LJ.prods.filter(p=>p.ativo!==false&&(!q||chaveNome(p.nome+' '+(p.ref||'')+' '+(p.cat||'')).includes(q)||(p.vars||[]).some(v=>soDig(v.ean)===soDig(raw)&&soDig(raw)))).slice(0,8).forEach(p=>{const est=(p.vars||[]).reduce((s,v)=>s+(+v.est||0),0);R.push({tipo:'Produto',ic:'produtos',t:p.nome,d:`${brl(+p.preco||0)} · ${est} em estoque${(p.vars||[]).length>1?' · '+p.vars.length+' variações':''}`,k:'prod:'+p.id})});
  if(!soP&&(q||soC))todosClientes().filter(c=>!q||chaveNome(c.nome).includes(q)||(soDig(raw)&&soDig(c.fone).includes(soDig(raw)))).slice(0,8).forEach(c=>R.push({tipo:'Cliente',ic:'clientes',t:c.nome,d:[c.fone?fmtFone(c.fone):'',c._deve>0?'deve '+brl(c._deve):''].filter(Boolean).join(' · '),k:'cli:'+c._k}));
  return R.slice(0,18)}
@@ -2013,7 +2076,7 @@ function irZap(){let n=soDig($('#zpn').value);if(n.length===10||n.length===11)n=
  if(n.length<12||n.length>13){$('#zperr').innerHTML='<div class="err" style="margin-top:10px">Digite o número com DDD, por exemplo (67) 99999-9999.</div>';return}
  const m=$('#zpm').value.trim();window.open('https://wa.me/'+n+(m?'?text='+encodeURIComponent(m):''),'_blank','noopener');fecharSheet()}
 
-document.addEventListener('click',e=>{if(!usaLoja()||!S.emp)return;const t=e.target.closest('button,a,div');if(!t)return;const ds=t.dataset||{};
+document.addEventListener('click',e=>{if(!S.emp||!usaPainel())return;const t=e.target.closest('button,a,div');if(!t)return;const ds=t.dataset||{};
  if(t.id==='pnmenu'){PN.menu=!PN.menu;PN.acoes=false;render();return}
  if(t.id==='gavx'||t.id==='gavfundo'){PN.menu=false;render();return}
  if(t.id==='pnacoes'){PN.acoes=!PN.acoes;render();return}
@@ -2024,14 +2087,14 @@ document.addEventListener('click',e=>{if(!usaLoja()||!S.emp)return;const t=e.tar
  if(t.id==='zpgo'){irZap();return}
  if(PN.acoes&&!e.target.closest('.lt-ac')){PN.acoes=false;render()}});
 document.addEventListener('input',e=>{if(e.target.id!=='bkq')return;PN.bq=e.target.value;PN.bi=0;const b=$('#bkres');if(b)b.innerHTML=listaBusca(resultadosBusca())});
-document.addEventListener('keydown',e=>{if(!S.user||S.isAdmin||!S.emp||!usaLoja())return;
+document.addEventListener('keydown',e=>{if(!S.user||S.isAdmin||!S.emp||!usaPainel())return;
  if(PN.busca){const R=resultadosBusca();
   if(e.key==='Escape'){e.preventDefault();PN.busca=null;render();return}
   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();PN.bi=(PN.bi+(e.key==='ArrowDown'?1:-1)+R.length)%Math.max(1,R.length);$('#bkres').innerHTML=listaBusca(R);$('#bkres .on')?.scrollIntoView({block:'nearest'});return}
   if(e.key==='Enter'&&R[PN.bi]){e.preventDefault();abrirResultado(R[PN.bi].k);return}return}
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();abrirBusca();return}
  if(e.key==='Escape'&&(PN.menu||PN.acoes)){PN.menu=false;PN.acoes=false;render();return}
- const f=/^F([2-9]|10)$/.test(e.key)&&telasOk().find(x=>x[5]===e.key);
+ const f=/^F([2-9]|10)$/.test(e.key)&&telasAtivas().find(x=>x[5]===e.key);
  if(f&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!$('#sheet').classList.contains('on')){e.preventDefault();abrirTela(f[0])}});
 
 /* ---------- Painel de gestão do escritório ---------- */
